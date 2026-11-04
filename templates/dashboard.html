@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Multi-Espécie — Animora{% endblock %}
+
+{% block content %}
+<!-- Banner Principal -->
+<section class="hero-banner mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <span class="badge rounded-pill px-3 py-2 mb-3 fw-bold" style="background-color: rgba(234, 82, 111, 0.25); color: #F7F7FF; border: 1px solid rgba(234, 82, 111, 0.6);">
+                <i class="bi bi-shield-check me-1"></i> Animora &bull; Nível {{ access_level | upper }}
+            </span>
+            <h1 class="display-6 fw-bold mb-2">Manejo Integrado Multi-Espécie</h1>
+            <p class="mb-0 text-white text-opacity-75 fs-6">
+                Gerencie <strong>Bovinos, Equinos e Ovinos</strong> na mesma plataforma: atribua etiquetas QR ou placas de baia/cocho, acompanhe vacinas, vermifugação, exames, planos de arraçoamento e rotinas de casqueamento e tosquia.
+            </p>
+        </div>
+        <div class="col-lg-4 d-flex flex-column flex-sm-row flex-lg-column gap-2 justify-content-lg-end">
+            <a href="{{ url_for('sanitary.dashboard') }}" class="btn btn-agro fw-bold py-2 px-4 rounded-3 shadow-sm">
+                <i class="bi bi-heart-pulse-fill me-1"></i> Sanidade &amp; Manejo
+            </a>
+            <a href="{{ url_for('animal_new') }}" class="btn btn-outline-light fw-semibold py-2 px-4 rounded-3">
+                <i class="bi bi-plus-lg me-1"></i>
+                {% if is_admin_authenticated %}Cadastrar Animal{% else %}Atribuir Animal a Etiqueta{% endif %}
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Indicadores por Espécie + Total -->
+<section class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card d-flex align-items-center justify-content-between">
+            <div>
+                <p class="text-muted small fw-bold text-uppercase mb-1">Plantel Total</p>
+                <h2 class="h2 fw-bold mb-0">{{ total_animals }}</h2>
+                <span class="small text-muted">{{ males_count }} M &bull; {{ females_count }} F</span>
+            </div>
+            <div class="stat-icon stat-icon-pink">
+                <i class="bi bi-tags-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', species='bovino') }}" class="text-decoration-none d-block stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-bold text-uppercase mb-1">Bovinos</p>
+                    <h2 class="h2 fw-bold mb-0 text-dark">{{ age_summary.bovino if age_summary else 0 }}</h2>
+                    <span class="small text-muted">Corte &amp; Leite</span>
+                </div>
+                <span class="fs-2">🐄</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', species='equino') }}" class="text-decoration-none d-block stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-bold text-uppercase mb-1">Equinos</p>
+                    <h2 class="h2 fw-bold mb-0 text-dark">{{ age_summary.equino if age_summary else 0 }}</h2>
+                    <span class="small text-muted">Baias, Esporte &amp; Lida</span>
+                </div>
+                <span class="fs-2">🐎</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', species='ovino') }}" class="text-decoration-none d-block stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-bold text-uppercase mb-1">Ovinos</p>
+                    <h2 class="h2 fw-bold mb-0 text-dark">{{ age_summary.ovino if age_summary else 0 }}</h2>
+                    <span class="small text-muted">Aprisco, Corte &amp; Lã</span>
+                </div>
+                <span class="fs-2">🐑</span>
+            </div>
+        </a>
+    </div>
+</section>
+
+<!-- Resumo Dinâmico por Faixa Etária Neutra -->
+{% if age_summary %}
+<section class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', age_category='recem_nascido') }}" class="text-decoration-none d-block kpi-mini-card">
+            <div class="small text-muted fw-semibold">Recém-nascidos (0–30d)</div>
+            <div class="kpi-mini-value mt-1">{{ age_summary.recem_nascido }}</div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', age_category='lactente') }}" class="text-decoration-none d-block kpi-mini-card">
+            <div class="small text-muted fw-semibold">Lactentes / Filhotes (31–180d)</div>
+            <div class="kpi-mini-value mt-1">{{ age_summary.lactente }}</div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', age_category='jovem') }}" class="text-decoration-none d-block kpi-mini-card">
+            <div class="small text-muted fw-semibold">Jovens (181–365d)</div>
+            <div class="kpi-mini-value mt-1">{{ age_summary.jovem }}</div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ url_for('animals_list', age_category='adulto') }}" class="text-decoration-none d-block kpi-mini-card">
+            <div class="small text-muted fw-semibold">Adultos (&gt;365d)</div>
+            <div class="kpi-mini-value mt-1">{{ age_summary.adulto }}</div>
+        </a>
+    </div>
+</section>
+{% endif %}
+
+<!-- Acesso Rápido e Últimos Cadastros -->
+<section class="row g-4">
+    <div class="col-lg-4">
+        <div class="card-agro p-4 h-100">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-lightning-charge-fill text-brand me-1"></i> Acesso Rápido
+            </h5>
+            <div class="d-grid gap-3">
+                <a href="{{ url_for('sanitary.dashboard') }}" class="p-3 rounded-4 text-decoration-none border d-flex align-items-center gap-3 bg-light-subtle">
+                    <div class="stat-icon stat-icon-olive flex-shrink-0">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Sanidade Preventiva</div>
+                        <div class="small text-muted">Vacinas, vermífugos, exames (AIE/Mormo/OPG) e calendário</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('sanitary.management_routines_view') }}" class="p-3 rounded-4 text-decoration-none border d-flex align-items-center gap-3 bg-light-subtle">
+                    <div class="stat-icon stat-icon-mustard flex-shrink-0">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">
+                            Rotinas de Manejo
+                            {% if mgmt_alerts and mgmt_alerts.overdue_alerts %}
+                                <span class="badge bg-danger ms-1">{{ mgmt_alerts.overdue_alerts | length }} atraso(s)</span>
+                            {% endif %}
+                        </div>
+                        <div class="small text-muted">Casqueamento, ferrageamento, tosquia e pesagem</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('animal_new') }}" class="p-3 rounded-4 text-decoration-none border d-flex align-items-center gap-3 bg-light-subtle">
+                    <div class="stat-icon stat-icon-pink flex-shrink-0">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">
+                            {% if is_admin_authenticated %}Adicionar / Atribuir Animal{% else %}Atribuir Animal{% endif %}
+                        </div>
+                        <div class="small text-muted">Bovino, Equino ou Ovino com QR Code e baia/lote</div>
+                    </div>
+                </a>
+
+                {% if is_admin_authenticated %}
+                    <a href="{{ url_for('labels.generator') }}" class="p-3 rounded-4 text-decoration-none border d-flex align-items-center gap-3 bg-light-subtle">
+                        <div class="stat-icon stat-icon-olive flex-shrink-0">
+                            <i class="bi bi-qr-code"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Criar QR Codes em Lote</div>
+                            <div class="small text-muted">Exclusivo Admin: gerar sequências e exportar PDF</div>
+                        </div>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('labels.history', status='available') }}" class="p-3 rounded-4 text-decoration-none border d-flex align-items-center gap-3 bg-light-subtle">
+                        <div class="stat-icon stat-icon-olive flex-shrink-0">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Etiquetas QR Disponíveis</div>
+                            <div class="small text-muted">Consultar etiquetas criadas pelo Admin e atribuir animais</div>
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card-agro p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-clock-history text-brand me-1"></i> Últimos Animais Cadastrados
+                </h5>
+                {% if recent_animals %}
+                    <a href="{{ url_for('animals_list') }}" class="btn btn-sm btn-outline-agro">
+                        Ver plantel completo
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if recent_animals %}
+                <div class="table-responsive">
+                    <table class="table table-agro align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Etiqueta</th>
+                                <th>Animal &amp; Espécie</th>
+                                <th>Alojamento / Faixa</th>
+                                <th>Sexo</th>
+                                <th class="text-end">Ficha / Placa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for animal in recent_animals %}
+                                <tr>
+                                    <td>
+                                        <span class="badge-ear-tag">#{{ animal.ear_tag }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ animal.name or "Sem nome" }}</div>
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                            <span class="{{ animal.species_badge_class }}">{{ animal.species_emoji }} {{ animal.species_label }}</span>
+                                            <span class="small text-muted">{{ animal.breed }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if animal.housing_display %}
+                                            <div class="small fw-semibold text-dark"><i class="bi bi-house-door text-brand me-1"></i>{{ animal.housing_display }}</div>
+                                        {% endif %}
+                                        <span class="{{ animal.age_badge_class }}">{{ animal.age_category_name }}</span>
+                                    </td>
+                                    <td>
+                                        {% if animal.sex == 'Macho' %}
+                                            <span class="badge-sex-male">Macho</span>
+                                        {% else %}
+                                            <span class="badge-sex-female">Fêmea</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-sm btn-outline-secondary rounded-3" title="Imprimir Placa de Baia / Ficha">
+                                                <i class="bi bi-card-heading"></i>
+                                            </a>
+                                            <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="btn btn-sm btn-agro">
+                                                <i class="bi bi-qr-code me-1"></i> Abrir
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 px-3">
+                    <div class="stat-icon stat-icon-pink mx-auto mb-3">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <h6 class="fw-bold">Nenhum animal atribuído ainda</h6>
+                    <p class="text-muted small mb-3">
+                        Comece atribuindo o primeiro Bovino, Equino ou Ovino a uma etiqueta QR disponível para ativar sua ficha, cocho e carteira sanitária.
+                    </p>
+                    <a href="{{ url_for('animal_new') }}" class="btn btn-agro">
+                        <i class="bi bi-plus-lg me-1"></i> Adicionar Primeiro Animal
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

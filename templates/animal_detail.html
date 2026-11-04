@@ -1,0 +1,1252 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if animal %}
+        Etiqueta #{{ animal.ear_tag }} ({{ animal.species_label }}) — Identificação &amp; Prontuário | Animora
+    {% elif unlinked_tag %}
+        Etiqueta #{{ unlinked_tag.tag_number }} (Disponível) | Animora
+    {% else %}
+        Registro não encontrado | Animora
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not animal and unlinked_tag %}
+    <!-- Estado: Etiqueta física pré-impressa escaneada antes de ser vinculada a um animal -->
+    <div class="row justify-content-center py-4 no-print">
+        <div class="col-md-8 col-lg-6">
+            <div class="card-agro p-4 p-md-5 text-center">
+                <div class="stat-icon stat-icon-pink mx-auto mb-3">
+                    <i class="bi bi-qr-code-scan"></i>
+                </div>
+                <span class="{{ unlinked_tag.status_badge_class }} mb-2 d-inline-block">
+                    {{ unlinked_tag.status_label }}
+                </span>
+                <h1 class="h4 fw-bold mb-2">Etiqueta Animora #{{ unlinked_tag.tag_number }}</h1>
+                <p class="text-muted mb-4">
+                    Esta etiqueta oficial Animora possui QR Code exclusivo válido, mas <strong>ainda não foi atribuída a nenhum animal</strong> (bovino, equino ou ovino).
+                    {% if unlinked_tag.status in ('available', 'assigned') %}
+                        Usuários de nível <strong>Property</strong> ou <strong>Admin</strong> podem atribuir um animal a esta etiqueta agora.
+                    {% endif %}
+                </p>
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                    {% if unlinked_tag.status in ('available', 'assigned') %}
+                        <a href="{{ url_for('animal_new', tag_unit_id=unlinked_tag.id) }}" class="btn btn-agro">
+                            <i class="bi bi-plus-circle me-1"></i> Atribuir Animal a esta Etiqueta
+                        </a>
+                    {% endif %}
+                    {% if is_property_authenticated %}
+                        <a href="{{ url_for('labels.history', q=unlinked_tag.tag_number) }}" class="btn btn-outline-agro">
+                            <i class="bi bi-tags me-1"></i> Ver Controle de Etiquetas
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('public_lookup') }}" class="btn btn-outline-agro">
+                            Nova Consulta Pública
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% elif not animal %}
+    <!-- Estado: Registro não encontrado -->
+    <div class="row justify-content-center py-4 no-print">
+        <div class="col-md-8 col-lg-6">
+            <div class="card-agro p-4 p-md-5 text-center">
+                <div class="stat-icon stat-icon-mustard mx-auto mb-3">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h1 class="h4 fw-bold mb-2">Registro de Animal Não Encontrado</h1>
+                <p class="text-muted mb-4">
+                    Não localizamos nenhum animal associado a este identificador ou QR Code na plataforma Animora.
+                    Verifique se o código escaneado está correto.
+                </p>
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                    <a href="{{ url_for('public_lookup') }}" class="btn btn-agro">
+                        <i class="bi bi-qr-code-scan me-1"></i> Nova Consulta QR
+                    </a>
+                    {% if is_property_authenticated %}
+                        <a href="{{ url_for('animals_list') }}" class="btn btn-outline-agro">
+                            <i class="bi bi-list-ul me-1"></i> Consultar Plantel
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- Cabeçalho da Ficha Individual -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 no-print">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    {% if is_property_authenticated and not force_public_preview %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('animals_list') }}" class="text-decoration-none text-muted">Plantel</a></li>
+                    {% else %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('public_lookup') }}" class="text-decoration-none text-muted">Consulta Pública QR</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">Etiqueta #{{ animal.ear_tag }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 fw-bold mb-0">
+                    {% if animal.name %}{{ animal.name }} &mdash; {% endif %}#{{ animal.ear_tag }}
+                </h1>
+                <span class="{{ animal.species_badge_class }}">
+                    {{ animal.species_emoji }} {{ animal.species_label }}
+                </span>
+                {% if animal.sex == 'Macho' %}
+                    <span class="badge-sex-male"><i class="bi bi-gender-male me-1"></i>Macho</span>
+                {% else %}
+                    <span class="badge-sex-female"><i class="bi bi-gender-female me-1"></i>Fêmea</span>
+                {% endif %}
+                <span class="{{ animal.age_badge_class }}">{{ animal.age_category_name }}</span>
+                {% if animal.housing_display %}
+                    <span class="badge bg-light text-dark border">
+                        <i class="bi bi-house-door me-1 text-fern"></i>{{ animal.housing_display }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if is_property_authenticated %}
+                <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-outline-agro btn-sm">
+                    <i class="bi bi-card-heading me-1"></i> Placa de Baia / Ficha QR
+                </a>
+                {% if force_public_preview %}
+                    <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="btn btn-agro btn-sm">
+                        <i class="bi bi-shield-check me-1"></i> Voltar à Visão Completa ({{ access_level | upper }})
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('animal_detail', token=animal.qr_code_token, public='1') }}" class="btn btn-outline-secondary btn-sm rounded-3">
+                        <i class="bi bi-eye me-1"></i> Pré-visualizar Modo Common
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('animals_list') }}" class="btn btn-olive btn-sm px-3 py-2">
+                    <i class="bi bi-arrow-left me-1"></i> Plantel
+                </a>
+            {% else %}
+                <a href="{{ url_for('public_lookup') }}" class="btn btn-olive btn-sm px-3 py-2">
+                    <i class="bi bi-search me-1"></i> Nova Consulta
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bloco Superior: Dados Principais & Origem + QR Code -->
+    <div class="row g-4 mb-4 no-print">
+        <div class="col-lg-7">
+            <div class="card-agro p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="stat-icon stat-icon-pink">
+                            <i class="bi bi-clipboard2-data"></i>
+                        </span>
+                        <div>
+                            <h5 class="fw-bold mb-0">Identificação, Alojamento &amp; Origem</h5>
+                            <small class="text-muted">Registrado em {{ animal.created_at | datetime_br }}</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success-emphasis">
+                        <i class="bi bi-patch-check-fill me-1"></i> Verificado Animora
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Nome do Animal</div>
+                            <div class="detail-field-value">{{ animal.name or "Não informado" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Código QR / Brinco / Placa</div>
+                            <div class="detail-field-value text-brand">
+                                #{{ animal.ear_tag }}
+                                {% if can_view_private_sanitary and animal.secondary_id %}
+                                    <div class="small text-muted fw-normal">Reg./Chip: {{ animal.secondary_id }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Espécie, Raça &amp; Sexo</div>
+                            <div class="detail-field-value">
+                                {{ animal.species_emoji }} {{ animal.species_label }} &bull; {{ animal.breed }}
+                                <div class="small text-muted fw-normal">
+                                    Sexo: {{ animal.sex }}
+                                    {% if animal.coat_color %} &bull; Pelagem: {{ animal.coat_color }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Alojamento / Baia / Setor</div>
+                            <div class="detail-field-value">
+                                {% if animal.housing_display %}
+                                    <i class="bi bi-house-door-fill text-fern me-1"></i>{{ animal.housing_display }}
+                                {% else %}
+                                    <span class="text-muted fw-normal">Pasto / Alojamento geral da propriedade</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">De Onde Veio (Propriedade &amp; Origem)</div>
+                            <div class="detail-field-value">
+                                {{ animal.property_name }}
+                                {% if animal.property_location %}
+                                    <span class="small text-muted fw-normal">({{ animal.property_location }})</span>
+                                {% endif %}
+                                <div class="small text-fern fw-semibold mt-1">
+                                    <i class="bi bi-geo-alt-fill me-1"></i>{{ animal.origin_label }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Idade &amp; Classificação</div>
+                            <div class="detail-field-value">
+                                {{ animal.age_category_name }}
+                                <div class="small text-muted fw-normal">{{ animal.age_label }} (Nasc.: {{ animal.birth_date | date_br }})</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if can_view_private_sanitary %}
+                        <div class="col-sm-6">
+                            <div class="detail-field">
+                                <div class="detail-field-label">Lote / Peso de Referência</div>
+                                <div class="detail-field-value">
+                                    {{ animal.lot_name }}
+                                    <div class="small text-muted fw-normal">Peso ref.: {{ animal.initial_weight | weight_br }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="detail-field">
+                                <div class="detail-field-label">Condição Reprodutiva</div>
+                                <div class="detail-field-value">
+                                    {{ animal.reproductive_status_label }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="detail-field">
+                                <div class="detail-field-label">Acompanhamento Sanitário &amp; Observações Internas</div>
+                                <div class="detail-field-value fw-normal">
+                                    <span class="badge bg-light text-dark border mb-1">{{ animal.onboarding_label }}</span>
+                                    <div class="small mt-1">
+                                        {% if animal.notes %}
+                                            {{ animal.notes }}
+                                        {% else %}
+                                            <span class="text-muted">Nenhuma observação interna registrada.</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="col-12">
+                            <div class="detail-field">
+                                <div class="detail-field-label">Consulta QR Pública</div>
+                                <div class="detail-field-value">
+                                    <span class="badge bg-success-subtle text-success-emphasis">Identificação Pública Verificada</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: QR Code Exclusivo -->
+        <div class="col-lg-5">
+            <div class="card-agro p-4 text-center h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h5 class="fw-bold mb-1">QR Code de Identificação</h5>
+                    <p class="text-muted small mb-2">
+                        Fixe no brinco, colar, placa de baia/cocheira ou ficha cadastral plastificada.
+                    </p>
+
+                    <div class="qr-frame my-2">
+                        <img
+                            src="{{ qr_image_url }}"
+                            alt="QR Code exclusivo do animal Etiqueta {{ animal.ear_tag }}"
+                        >
+                    </div>
+
+                    <div class="mt-2 mb-3">
+                        <div class="d-inline-flex align-items-center gap-2 bg-light border rounded-3 px-3 py-1 max-w-100">
+                            <code class="text-dark small text-break">{{ public_url }}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    {% if is_property_authenticated %}
+                        <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-agro btn-sm py-2">
+                            <i class="bi bi-card-heading me-1"></i> Emitir Placa de Baia / Ficha QR
+                        </a>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-agro btn-sm w-100 py-2" data-bs-toggle="modal" data-bs-target="#qrPreviewModal">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i> Ampliar QR
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <a href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}" class="btn btn-outline-agro btn-sm w-100 py-2">
+                                    <i class="bi bi-download me-1"></i> Baixar PNG
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" id="printQrBtn" class="btn btn-olive btn-sm w-100 py-2">
+                                    <i class="bi bi-printer me-1"></i> Etiqueta Simples
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" id="copyPublicUrlBtn" data-url="{{ public_url }}" class="btn btn-outline-secondary btn-sm rounded-3 fw-semibold w-100 py-2">
+                                    <i class="bi bi-link-45deg me-1"></i> Copiar Link
+                                </button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <button type="button" class="btn btn-outline-agro btn-sm py-2" data-bs-toggle="modal" data-bs-target="#qrPreviewModal">
+                            <i class="bi bi-arrows-fullscreen me-1"></i> Ampliar QR Code
+                        </button>
+                        <button type="button" id="copyPublicUrlBtn" data-url="{{ public_url }}" class="btn btn-agro btn-sm py-2">
+                            <i class="bi bi-link-45deg me-1"></i> Copiar Link da Ficha Pública
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================================
+         SEÇÕES RESTRITAS (Property e Admin): Cocho, Rotinas de Manejo & Sanidade
+         ====================================================================== -->
+    {% if not can_view_private_sanitary %}
+        <div class="card-agro p-4 no-print">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-start gap-3">
+                    <span class="stat-icon stat-icon-olive flex-shrink-0">
+                        <i class="bi bi-shield-lock"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold mb-1">Plano de Cocho, Manejo &amp; Prontuário Sanitário Restritos</h5>
+                        <p class="text-muted small mb-0">
+                            No nível <strong>Common</strong> (consulta pública da placa/etiqueta QR), apenas a identificação, espécie, pelagem, origem e baia/alojamento são exibidos.
+                            <strong>Plano de Cocho/Arraçoamento, Sanidade (vacinas, vermífugos e exames) e Rotinas de Manejo</strong> são restritos à equipe autenticada (<strong>Property</strong> ou <strong>Admin</strong>).
+                        </p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="{{ url_for('operator_login', level='property', next=url_for('animal_detail', token=animal.qr_code_token)) }}" class="btn btn-agro">
+                        <i class="bi bi-unlock me-1"></i> Entrar como Property
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        {% if ctx and ctx.migration_ready and not migration_004_ready %}
+            <div class="alert alert-warning rounded-4 border-warning-subtle shadow-sm p-3 mb-4 no-print">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-database-up fs-5 text-warning-emphasis"></i>
+                    <div class="small">
+                        <strong>Atualização Multi-Espécie (Migração 004) Pendente no Supabase:</strong>
+                        execute o script <code>database/migrations/004_multi_species_management.sql</code> no SQL Editor do Supabase para habilitar a gravação de <strong>Planos de Cocho</strong>, <strong>Rotinas de Manejo</strong> (casqueamento, tosquia, pesagem) e colunas multi-espécie.
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Bloco Intermediário: Plano de Cocho/Arraçoamento + Rotinas de Manejo por Espécie -->
+        <div class="row g-4 mb-4 no-print">
+            <!-- Card A: Plano Individual de Cocho & Arraçoamento -->
+            <div class="col-lg-6" id="plano-cocho">
+                <div class="card-agro p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="stat-icon stat-icon-mustard">
+                                    <i class="bi bi-basket2-fill"></i>
+                                </span>
+                                <div>
+                                    <h5 class="fw-bold mb-0">Plano de Cocho &amp; Arraçoamento</h5>
+                                    <small class="text-muted">Visível apenas para equipe autenticada (Property / Admin)</small>
+                                </div>
+                            </div>
+                            {% if ctx and ctx.migration_ready and migration_004_ready %}
+                                <button type="button" class="btn btn-sm btn-agro" data-bs-toggle="modal" data-bs-target="#feedingPlanModal">
+                                    <i class="bi bi-pencil-square me-1"></i> {{ "Editar Cocho" if feeding_plan else "Configurar Cocho" }}
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {% set sp_warn = species_meta.get(animal.species, {}).get('feeding_warning') %}
+                        {% if sp_warn %}
+                            <div class="alert {% if animal.species == 'ovino' %}alert-danger{% else %}alert-warning{% endif %} rounded-3 py-2 px-3 small mb-3">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ sp_warn }}
+                            </div>
+                        {% endif %}
+
+                        {% if feeding_plan %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark">{{ feeding_plan.plan_name }}</span>
+                                {% if feeding_plan.is_active %}
+                                    <span class="badge bg-success-subtle text-success-emphasis">Dieta Ativa</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">Pausada</span>
+                                {% endif %}
+                            </div>
+                            <div class="row g-2 small">
+                                <div class="col-sm-6">
+                                    <div class="p-2 rounded-3 border bg-light-subtle h-100">
+                                        <div class="text-muted fw-semibold">Volumoso (Feno / Capim / Silagem)</div>
+                                        <div class="fw-semibold text-dark mt-1">{{ feeding_plan.roughage or "—" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="p-2 rounded-3 border bg-light-subtle h-100">
+                                        <div class="text-muted fw-semibold">Concentrado / Ração</div>
+                                        <div class="fw-semibold text-dark mt-1">{{ feeding_plan.concentrate or "—" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="p-2 rounded-3 border bg-light-subtle h-100">
+                                        <div class="text-muted fw-semibold">Suplemento / Sal Mineral</div>
+                                        <div class="fw-semibold text-dark mt-1">{{ feeding_plan.supplement_mineral or "—" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="p-2 rounded-3 border bg-light-subtle h-100">
+                                        <div class="text-muted fw-semibold">Horários de Trato</div>
+                                        <div class="fw-semibold text-dark mt-1">{{ feeding_plan.feeding_schedule or "—" }}</div>
+                                    </div>
+                                </div>
+                                {% if feeding_plan.water_and_trough_notes %}
+                                    <div class="col-12">
+                                        <div class="p-2 rounded-3 border bg-light-subtle">
+                                            <div class="text-muted fw-semibold">Instruções de Cocho &amp; Água</div>
+                                            <div class="text-secondary mt-1">{{ feeding_plan.water_and_trough_notes }}</div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4 text-muted small">
+                                <i class="bi bi-basket2 fs-3 d-block mb-2 opacity-50"></i>
+                                Nenhum plano individual de cocho/arraçoamento configurado para este animal.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                        <span>
+                            {% if feeding_plan and feeding_plan.updated_at %}
+                                Atualizado por {{ feeding_plan.updated_by }} em {{ feeding_plan.updated_at | datetime_br }}
+                            {% else %}
+                                Ideal para consulta rápida no cocho via QR Code autenticado
+                            {% endif %}
+                        </span>
+                        <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token, mode='ficha') }}" class="text-decoration-none fw-semibold text-brand">
+                            Imprimir Ficha c/ Dieta &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card B: Rotinas de Manejo por Espécie (Casqueamento, Ferrageamento, Tosquia, Pesagem...) -->
+            <div class="col-lg-6" id="rotinas-manejo">
+                <div class="card-agro p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="stat-icon stat-icon-olive">
+                                    <i class="bi bi-tools"></i>
+                                </span>
+                                <div>
+                                    <h5 class="fw-bold mb-0">Rotinas de Manejo ({{ animal.species_label }})</h5>
+                                    <small class="text-muted">
+                                        {% if animal.species == 'equino' %}
+                                            Casqueamento, ferrageamento, odontologia e pesagem
+                                        {% elif animal.species == 'ovino' %}
+                                            Tosquia (velo/lã), casqueamento, Famacha e pesagem
+                                        {% else %}
+                                            Pesagem corporal e casqueamento preventivo
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% if ctx and ctx.migration_ready and migration_004_ready %}
+                                <button type="button" class="btn btn-sm btn-olive" data-bs-toggle="modal" data-bs-target="#newManagementModal">
+                                    <i class="bi bi-plus-circle me-1"></i> Registrar Manejo
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {% if management_records %}
+                            <div class="d-grid gap-2" style="max-height: 290px; overflow-y: auto;">
+                                {% for mr in management_records[:8] %}
+                                    <div class="p-2 px-3 rounded-3 border bg-light-subtle">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                                            <span class="{{ mr.routine_badge_class }}">
+                                                <i class="bi {{ mr.routine_icon }} me-1"></i>{{ mr.routine_short_label }}
+                                            </span>
+                                            <span class="{{ mr.due_badge_class }}">{{ mr.due_status_label }}</span>
+                                        </div>
+                                        <div class="small text-dark fw-semibold">
+                                            Realizado em {{ mr.performed_at | date_br }}
+                                            {% if mr.weight_kg is not none %} &bull; Peso: {{ mr.weight_kg | weight_br }}{% endif %}
+                                            {% if mr.fleece_weight_kg is not none %} &bull; Velo/Lã: {{ mr.fleece_weight_kg | weight_br }}{% endif %}
+                                            {% if mr.famacha_score is not none %} &bull; Famacha Grau {{ mr.famacha_score }}/5{% endif %}
+                                            {% if mr.hoof_condition %} &bull; {{ mr.hoof_condition }}{% endif %}
+                                        </div>
+                                        {% if mr.notes or mr.specialist_or_responsible %}
+                                            <div class="small text-muted mt-1">
+                                                {% if mr.specialist_or_responsible %}Resp.: {{ mr.specialist_or_responsible }}{% endif %}
+                                                {% if mr.notes %} &mdash; {{ mr.notes }}{% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4 text-muted small">
+                                <i class="bi bi-clipboard2-check fs-3 d-block mb-2 opacity-50"></i>
+                                Nenhuma rotina de manejo registrada para este animal ainda.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                        <span>Total de manejos registrados: <strong>{{ management_records | length }}</strong></span>
+                        <a href="{{ url_for('sanitary.management_routines_view', species=animal.species) }}" class="text-decoration-none fw-semibold text-fern">
+                            Painel de Manejo &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEÇÃO: CARTEIRA SANITÁRIA INDIVIDUAL -->
+        <section class="card-agro p-4 p-md-4 mb-4 no-print" id="carteira-sanitaria">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 border-bottom pb-3 mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="stat-icon stat-icon-green">
+                        <i class="bi bi-journal-medical"></i>
+                    </span>
+                    <div>
+                        <h4 class="h5 fw-bold mb-0">Carteira Sanitária Individual ({{ animal.species_label }})</h4>
+                        <small class="text-muted">Vacinas, vermífugos, exames preventivos (AIE/Mormo/OPG), ocorrências e linha do tempo</small>
+                    </div>
+                </div>
+
+                {% if ctx and ctx.migration_ready %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-agro js-open-apply-modal"
+                            data-schedule-id=""
+                            data-animal-id="{{ animal.id }}"
+                            data-animal-label="#{{ animal.ear_tag }}{% if animal.name %} — {{ animal.name }}{% endif %}"
+                            data-vaccine-id=""
+                            data-dose-number="1"
+                            data-historical="0"
+                        >
+                            <i class="bi bi-eyedropper me-1"></i> Vacina / Vermífugo / Exame
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-agro js-open-apply-modal"
+                            data-schedule-id=""
+                            data-animal-id="{{ animal.id }}"
+                            data-animal-label="#{{ animal.ear_tag }} (Histórico Anterior)"
+                            data-vaccine-id=""
+                            data-dose-number="1"
+                            data-historical="1"
+                        >
+                            <i class="bi bi-clock-history me-1"></i> Informar Histórico Anterior
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-olive" data-bs-toggle="modal" data-bs-target="#newHealthRecordModal">
+                            <i class="bi bi-plus-circle me-1"></i> Ocorrência / Tratamento
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" data-bs-toggle="modal" data-bs-target="#editSanitaryProfileModal">
+                            <i class="bi bi-sliders me-1"></i> Perfil / Baia / Protocolo
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if not ctx or not ctx.migration_ready %}
+                <div class="alert alert-warning rounded-3 small mb-0">
+                    Execute <code>database/migrations/001_sanitary_module.sql</code> no Supabase para habilitar os registros da Carteira Sanitária.
+                </div>
+            {% elif sanitary_card %}
+                <!-- Resumo Rápido da Carteira -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded-3 border bg-light-subtle text-center">
+                            <div class="small text-muted fw-semibold">Preventivos Realizados</div>
+                            <div class="h4 fw-bold text-success mb-0 mt-1">{{ sanitary_card.applied_records | length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded-3 border bg-light-subtle text-center">
+                            <div class="small text-muted fw-semibold">Pendentes / Próximos</div>
+                            <div class="h4 fw-bold mb-0 mt-1">{{ (sanitary_card.pending_schedules | length) + (sanitary_card.upcoming_schedules | length) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded-3 border bg-light-subtle text-center">
+                            <div class="small text-muted fw-semibold">Atrasados</div>
+                            <div class="h4 fw-bold {% if sanitary_card.overdue_schedules %}text-danger{% endif %} mb-0 mt-1">{{ sanitary_card.overdue_schedules | length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded-3 border bg-light-subtle text-center">
+                            <div class="small text-muted fw-semibold">Clínica &amp; Manejos</div>
+                            <div class="h4 fw-bold mb-0 mt-1">{{ (sanitary_card.treatments | length) + (sanitary_card.occurrences | length) + (sanitary_card.vet_notes | length) + (management_records | length) }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Abas da Carteira Sanitária -->
+                <ul class="nav nav-pills gap-2 mb-4" id="sanitaryCardTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabTimeline" type="button" role="tab">
+                            <i class="bi bi-clock-history me-1"></i> Linha do Tempo ({{ sanitary_card.timeline | length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabPending" type="button" role="tab">
+                            <i class="bi bi-calendar-check me-1"></i> Próximas &amp; Atrasadas ({{ (sanitary_card.overdue_schedules | length) + (sanitary_card.pending_schedules | length) + (sanitary_card.upcoming_schedules | length) }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabApplied" type="button" role="tab">
+                            <i class="bi bi-eyedropper me-1"></i> Vacinas, Vermífugos &amp; Exames ({{ sanitary_card.applied_records | length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabClinical" type="button" role="tab">
+                            <i class="bi bi-clipboard2-pulse me-1"></i> Tratamentos &amp; Ocorrências ({{ (sanitary_card.treatments | length) + (sanitary_card.occurrences | length) + (sanitary_card.vet_notes | length) }})
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- ABA 1: Linha do Tempo Cronológica -->
+                    <div class="tab-pane fade show active" id="tabTimeline" role="tabpanel">
+                        {% if sanitary_card.timeline %}
+                            <div class="sanitary-timeline">
+                                {% for item in sanitary_card.timeline %}
+                                    <div class="timeline-item">
+                                        <span class="timeline-dot">
+                                            <i class="bi {{ item.icon }}"></i>
+                                        </span>
+                                        <div class="timeline-card">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                                                <span class="badge {{ item.badge_class }}">{{ item.badge_label }}</span>
+                                                <small class="text-muted fw-semibold">
+                                                    {% if item.is_datetime %}
+                                                        {{ item.date_display | datetime_br }}
+                                                    {% else %}
+                                                        Data: {{ item.date_display | date_br }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <div class="fw-bold text-dark">{{ item.title }}</div>
+                                            <div class="small text-muted">{{ item.subtitle }}</div>
+                                            {% if item.notes %}
+                                                <div class="small mt-2 pt-2 border-top text-secondary">{{ item.notes }}</div>
+                                            {% endif %}
+                                            {% if item.kind == 'schedule' and item.schedule.status in ('pendente', 'proxima_aplicacao', 'atrasada') %}
+                                                <div class="mt-2 d-flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-agro py-1 px-2 js-open-apply-modal"
+                                                        data-schedule-id="{{ item.schedule.id }}"
+                                                        data-animal-id="{{ animal.id }}"
+                                                        data-animal-label="#{{ animal.ear_tag }}"
+                                                        data-vaccine-id="{{ item.schedule.vaccine_id }}"
+                                                        data-dose-number="{{ item.schedule.dose_number }}"
+                                                        data-manufacturer="{{ item.schedule.vaccines.manufacturer if item.schedule.vaccines else '' }}"
+                                                        data-route="{{ item.schedule.vaccines.administration_route if item.schedule.vaccines else '' }}"
+                                                        data-unit="{{ item.schedule.vaccines.dosage_unit if item.schedule.vaccines else 'mL' }}"
+                                                    >
+                                                        <i class="bi bi-check2-circle me-1"></i> Confirmar Realização
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-secondary py-1 px-2 js-open-status-modal"
+                                                        data-action-url="{{ url_for('sanitary.update_schedule_status', schedule_id=item.schedule.id) }}"
+                                                        data-schedule-desc="{{ item.title }}"
+                                                    >
+                                                        Alterar Situação
+                                                    </button>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4 text-muted small">
+                                Nenhum evento sanitário ou de manejo registrado ainda para este animal.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ABA 2: Próximas Aplicações & Atrasadas -->
+                    <div class="tab-pane fade" id="tabPending" role="tabpanel">
+                        {% set all_sched = sanitary_card.overdue_schedules + sanitary_card.pending_schedules + sanitary_card.upcoming_schedules + sanitary_card.unknown_or_other_schedules %}
+                        {% if all_sched %}
+                            <div class="table-responsive">
+                                <table class="table table-agro align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Preventivo / Dose</th>
+                                            <th>Origem</th>
+                                            <th>Data Prevista</th>
+                                            <th>Situação</th>
+                                            <th class="text-end">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for s in all_sched %}
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-bold">{{ s.vaccines.commercial_name if s.vaccines else 'Preventivo' }}</div>
+                                                    <div class="small text-muted">{{ s.dose_number }}ª dose/coleta</div>
+                                                </td>
+                                                <td class="small">
+                                                    {% if s.vaccination_campaigns %}
+                                                        Campanha: {{ s.vaccination_campaigns.name }}
+                                                    {% elif s.sanitary_protocols %}
+                                                        Protocolo: {{ s.sanitary_protocols.name }}
+                                                    {% else %}
+                                                        {{ s.origin_type | title }}
+                                                    {% endif %}
+                                                </td>
+                                                <td class="small">
+                                                    {{ s.scheduled_date | date_br }}
+                                                    {% if s.window_end_date and s.window_end_date != s.scheduled_date %}
+                                                        <div class="text-muted">até {{ s.window_end_date | date_br }}</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td><span class="{{ s.status_badge_class }}">{{ s.status_label }}</span></td>
+                                                <td class="text-end">
+                                                    {% if s.status in ('pendente', 'proxima_aplicacao', 'atrasada') %}
+                                                        <div class="d-inline-flex gap-1">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-agro js-open-apply-modal"
+                                                                data-schedule-id="{{ s.id }}"
+                                                                data-animal-id="{{ animal.id }}"
+                                                                data-animal-label="#{{ animal.ear_tag }}"
+                                                                data-vaccine-id="{{ s.vaccine_id }}"
+                                                                data-dose-number="{{ s.dose_number }}"
+                                                                data-manufacturer="{{ s.vaccines.manufacturer if s.vaccines else '' }}"
+                                                                data-route="{{ s.vaccines.administration_route if s.vaccines else '' }}"
+                                                                data-unit="{{ s.vaccines.dosage_unit if s.vaccines else 'mL' }}"
+                                                            >
+                                                                Confirmar
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-secondary js-open-status-modal"
+                                                                data-action-url="{{ url_for('sanitary.update_schedule_status', schedule_id=s.id) }}"
+                                                                data-schedule-desc="{{ s.vaccines.commercial_name if s.vaccines else 'Preventivo' }} ({{ s.dose_number }}ª dose)"
+                                                            >
+                                                                <i class="bi bi-three-dots"></i>
+                                                            </button>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="small text-muted">{{ s.status_reason or "—" }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small text-center py-4 mb-0">Nenhum agendamento pendente ou futuro no momento.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ABA 3: Vacinas, Vermífugos & Exames Registrados -->
+                    <div class="tab-pane fade" id="tabApplied" role="tabpanel">
+                        {% if sanitary_card.applied_records %}
+                            <div class="table-responsive">
+                                <table class="table table-agro align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Preventivo &amp; Dose</th>
+                                            <th>Realização</th>
+                                            <th>Dosagem / Resultado</th>
+                                            <th>Lote &amp; Fabricante/Lab.</th>
+                                            <th>Responsável</th>
+                                            <th>Próximo Retorno</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for r in sanitary_card.applied_records %}
+                                            {% set itype = (r.vaccines.item_type if r.vaccines and r.vaccines.item_type else 'vacina') %}
+                                            {% set imeta = preventive_item_types.get(itype, preventive_item_types['vacina']) %}
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-bold">{{ r.vaccines.commercial_name if r.vaccines else 'Preventivo' }}</div>
+                                                    <span class="{{ imeta.badge_class }} me-1">{{ imeta.label }}</span>
+                                                    <span class="badge-status-applied">{{ r.dose_number }}ª</span>
+                                                    {% if r.is_historical_record %}
+                                                        <span class="badge bg-secondary-subtle text-secondary-emphasis">Histórico Anterior</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="small">{{ r.applied_at | datetime_br }}</td>
+                                                <td class="small">
+                                                    <div>{{ r.dosage }} {{ r.dosage_unit }} &bull; {{ r.administration_route }}</div>
+                                                    {% if r.exam_result %}
+                                                        <div class="fw-semibold text-fern mt-1">
+                                                            <i class="bi bi-clipboard2-check me-1"></i>Laudo/Resultado: {{ r.exam_result }}
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="small">
+                                                    <div>Lote/Prot.: <strong>{{ r.product_batch or "—" }}</strong></div>
+                                                    <div class="text-muted">{{ r.manufacturer }}</div>
+                                                </td>
+                                                <td class="small">{{ r.applied_by }}</td>
+                                                <td class="small">{{ r.next_dose_date | date_br if r.next_dose_date else "—" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small text-center py-4 mb-0">Nenhum preventivo confirmado registrado ainda.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ABA 4: Histórico de Tratamentos, Ocorrências e Observações Veterinárias -->
+                    <div class="tab-pane fade" id="tabClinical" role="tabpanel">
+                        {% set clinical_all = sanitary_card.treatments + sanitary_card.occurrences + sanitary_card.vet_notes %}
+                        {% if clinical_all %}
+                            <div class="d-grid gap-3">
+                                {% for c in clinical_all %}
+                                    {% set tmeta = health_record_types.get(c.record_type, health_record_types['observacao_veterinaria']) %}
+                                    <div class="p-3 rounded-3 border bg-light-subtle">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="badge {{ tmeta.badge }}">{{ tmeta.label }}</span>
+                                            <small class="text-muted">{{ c.occurred_at | datetime_br }}</small>
+                                        </div>
+                                        <div class="fw-bold">{{ c.title }}</div>
+                                        <p class="small text-secondary mb-1">{{ c.description }}</p>
+                                        <div class="small text-muted">
+                                            {% if c.medication_applied %}Medicação: <strong>{{ c.medication_applied }}</strong> ({{ c.dosage_info or 'conforme prescrição' }}) &bull; {% endif %}
+                                            Responsável: {{ c.veterinarian_or_responsible or 'Não informado' }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small text-center py-4 mb-0">Nenhum tratamento, ocorrência ou observação veterinária registrado.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        {% if ctx and ctx.migration_ready %}
+            {% include "sanitary/_apply_modal.html" %}
+
+            <!-- Modal: Plano Individual de Cocho & Arraçoamento -->
+            <div class="modal fade no-print" id="feedingPlanModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form method="POST" action="{{ url_for('sanitary.save_animal_feeding_plan') }}">
+                            <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                            <input type="hidden" name="animal_id" value="{{ animal.id }}">
+                            <div class="modal-header border-bottom pb-2">
+                                <div>
+                                    <h5 class="modal-title fw-bold">
+                                        <i class="bi bi-basket2-fill text-warning me-1"></i> Plano de Cocho &amp; Arraçoamento
+                                    </h5>
+                                    <span class="badge-ear-tag">#{{ animal.ear_tag }} &bull; {{ animal.species_label }}</span>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                {% set sp_warn_modal = species_meta.get(animal.species, {}).get('feeding_warning') %}
+                                {% if sp_warn_modal %}
+                                    <div class="alert {% if animal.species == 'ovino' %}alert-danger{% else %}alert-warning{% endif %} rounded-3 py-2 px-3 small mb-3">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ sp_warn_modal }}
+                                    </div>
+                                {% endif %}
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">Nome da Dieta / Fase <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="plan_name" value="{{ feeding_plan.plan_name if feeding_plan else 'Dieta Individual de Cocho' }}" required>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="feedingPlanActiveSwitch" name="is_active" value="true" {% if not feeding_plan or feeding_plan.is_active %}checked{% endif %}>
+                                            <label class="form-check-label fw-semibold" for="feedingPlanActiveSwitch">Dieta ativa no cocho</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Volumoso (Feno / Capim / Silagem)</label>
+                                        <input type="text" class="form-control" name="roughage" value="{{ feeding_plan.roughage if feeding_plan and feeding_plan.roughage else '' }}" placeholder="Ex.: 6 kg Feno Tifton 85 / dia">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Concentrado / Ração</label>
+                                        <input type="text" class="form-control" name="concentrate" value="{{ feeding_plan.concentrate if feeding_plan and feeding_plan.concentrate else '' }}" placeholder="Ex.: 2,5 kg Ração 14% PB dividida em 2 tratos">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Suplemento / Sal Mineral</label>
+                                        <input type="text" class="form-control" name="supplement_mineral" value="{{ feeding_plan.supplement_mineral if feeding_plan and feeding_plan.supplement_mineral else '' }}" placeholder="{% if animal.species == 'ovino' %}Ex.: Sal mineral específico p/ Ovinos (sem cobre extra){% else %}Ex.: Sal mineral específico à vontade{% endif %}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Horários de Trato</label>
+                                        <input type="text" class="form-control" name="feeding_schedule" value="{{ feeding_plan.feeding_schedule if feeding_plan and feeding_plan.feeding_schedule else '' }}" placeholder="Ex.: 07:00, 12:30 e 17:30">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Instruções de Cocho, Água &amp; Restrições</label>
+                                        <textarea class="form-control" name="water_and_trough_notes" rows="2" placeholder="Ex.: Molhar o feno em caso de poeira; limpar bebedouro automático diariamente...">{{ feeding_plan.water_and_trough_notes if feeding_plan and feeding_plan.water_and_trough_notes else '' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-agro">Salvar Plano de Cocho</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Nova Rotina de Manejo por Espécie -->
+            <div class="modal fade no-print" id="newManagementModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form method="POST" action="{{ url_for('sanitary.add_management_record') }}">
+                            <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                            <input type="hidden" name="animal_id" value="{{ animal.id }}">
+                            <div class="modal-header border-bottom pb-2">
+                                <div>
+                                    <h5 class="modal-title fw-bold">Registrar Rotina de Manejo</h5>
+                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_emoji }} {{ animal.species_label }} &bull; #{{ animal.ear_tag }}</span>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Tipo de Manejo <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="routine_type" id="detailRoutineTypeSelect" required>
+                                            {% for rslug, rmeta in species_routines.items() %}
+                                                <option value="{{ rslug }}" data-interval="{{ rmeta.default_interval_days }}">
+                                                    {{ rmeta.label }} (retorno sugerido: {{ rmeta.default_interval_days }}d)
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Data Realizada <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" name="performed_at" value="{{ today_iso }}" max="{{ today_iso }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Próximo Retorno <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="date" class="form-control" name="next_due_date">
+                                        <div class="form-check mt-1">
+                                            <input class="form-check-input" type="checkbox" id="autoSuggestDueDetail" name="auto_suggest_due" value="1" checked>
+                                            <label class="form-check-label small text-muted" for="autoSuggestDueDetail">
+                                                Sugerir retorno automático se em branco
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Peso Corporal (kg) <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="number" step="0.01" min="0" max="3000" class="form-control" name="weight_kg" placeholder="Ex.: 420.5">
+                                    </div>
+
+                                    {% if animal.species == 'ovino' %}
+                                        <div class="col-md-6">
+                                            <label class="form-label">Peso do Velo / Lã (kg)</label>
+                                            <input type="number" step="0.01" min="0" max="50" class="form-control" name="fleece_weight_kg" placeholder="Ex.: 3.8 (Tosquia)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Grau Famacha (1 a 5)</label>
+                                            <select class="form-select" name="famacha_score">
+                                                <option value="">Não avaliado</option>
+                                                <option value="1">1 — Vermelho vivo (Ótimo)</option>
+                                                <option value="2">2 — Vermelho rosado (Bom)</option>
+                                                <option value="3">3 — Rosa (Atenção limítrofe)</option>
+                                                <option value="4">4 — Rosa pálido (Tratar)</option>
+                                                <option value="5">5 — Branco / Anêmico (Urgente)</option>
+                                            </select>
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Condição de Cascos / Dentes</label>
+                                        <input type="text" class="form-control" name="hoof_condition" placeholder="Ex.: Ferraduras dianteiras novas / Sem lesões">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Profissional / Ferrador / Tosquiador / Responsável</label>
+                                        <input type="text" class="form-control" name="specialist_or_responsible" value="{{ current_operator.name }}">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Observações do Manejo</label>
+                                        <textarea class="form-control" name="notes" rows="2" placeholder=" Anotações de aprumos, escore corporal, comportamento ou recomendações..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-agro">Salvar Manejo</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Novo Registro Clínico (Tratamento / Ocorrência / Observação / Retificação) -->
+            <div class="modal fade no-print" id="newHealthRecordModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form method="POST" action="{{ url_for('sanitary.add_health_record') }}">
+                            <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                            <input type="hidden" name="animal_id" value="{{ animal.id }}">
+                            <div class="modal-header border-bottom pb-2">
+                                <h5 class="modal-title fw-bold">Novo Registro Clínico na Carteira</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tipo de Registro <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="record_type" required>
+                                            <option value="ocorrencia">Ocorrência Sanitária</option>
+                                            <option value="tratamento">Histórico de Tratamento</option>
+                                            <option value="observacao_veterinaria">Observação Veterinária</option>
+                                            <option value="avaliacao_inicial">Avaliação Sanitária Inicial</option>
+                                            <option value="correcao_historico">Retificação / Nota de Correção</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Data / Hora</label>
+                                        <input type="datetime-local" class="form-control" name="occurred_at" value="{{ now_dt_local }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Título Resumido <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="title" placeholder="Ex.: Exame clínico de rotina / Curativo / Cólica leve" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Descrição Detalhada <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Medicação / Produto <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="text" class="form-control" name="medication_applied">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Posologia / Dose <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="text" class="form-control" name="dosage_info">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Veterinário ou Responsável</label>
+                                        <input type="text" class="form-control" name="veterinarian_or_responsible" value="{{ current_operator.name }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-agro">Salvar Registro</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Editar Perfil Cadastral, Alojamento/Baia e Protocolo Sanitário -->
+            <div class="modal fade no-print" id="editSanitaryProfileModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form method="POST" action="{{ url_for('sanitary.update_animal_profile', animal_id=animal.id) }}">
+                            <div class="modal-header border-bottom pb-2">
+                                <h5 class="modal-title fw-bold">Perfil Cadastral, Baia &amp; Protocolos do Animal</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Espécie</label>
+                                        <select class="form-select" name="species">
+                                            {% for sp_slug, sp_info in species_meta.items() %}
+                                                <option value="{{ sp_slug }}" {% if animal.species == sp_slug %}selected{% endif %}>
+                                                    {{ sp_info.emoji }} {{ sp_info.label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Pelagem</label>
+                                        <input type="text" class="form-control" name="coat_color" value="{{ animal.coat_color or '' }}" placeholder="Ex.: Alazão, Nelore Branca, Santa Inês Preta">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Condição Reprodutiva</label>
+                                        <select class="form-select" name="reproductive_status">
+                                            {% for rslug, rlabel in reproductive_statuses.items() %}
+                                                <option value="{{ rslug }}" {% if (animal.reproductive_status or 'nao_informado') == rslug %}selected{% endif %}>{{ rlabel }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label">Registro / Microchip / SISBOV</label>
+                                        <input type="text" class="form-control" name="secondary_id" value="{{ animal.secondary_id or '' }}" placeholder="Opcional">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Tipo de Alojamento</label>
+                                        <select class="form-select" name="accommodation_type">
+                                            <option value="">Não especificado</option>
+                                            {% for aslug, alabel in accommodation_types.items() %}
+                                                <option value="{{ aslug }}" {% if animal.accommodation_type == aslug %}selected{% endif %}>{{ alabel }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Identificação da Baia / Setor</label>
+                                        <input type="text" class="form-control" name="accommodation_name" value="{{ animal.accommodation_name or '' }}" placeholder="Ex.: Baia 04 - Pavilhão Norte">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Propriedade</label>
+                                        <select class="form-select" name="property_id" required>
+                                            {% for p in ctx.properties %}
+                                                <option value="{{ p.id }}" {% if animal.property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Lote de Manejo</label>
+                                        <select class="form-select" name="lot_id">
+                                            <option value="">Sem lote</option>
+                                            {% for l in ctx.lots %}
+                                                <option value="{{ l.id }}" {% if animal.lot_id == l.id %}selected{% endif %}>{{ l.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-8">
+                                        <label class="form-label">Modo de Acompanhamento Sanitário</label>
+                                        <select class="form-select" name="sanitary_onboarding_mode">
+                                            {% for slug, label in onboarding_modes.items() %}
+                                                <option value="{{ slug }}" {% if animal.sanitary_onboarding_mode == slug %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">
+                                            Protocolos preventivos são filtrados automaticamente pela espécie selecionada ({{ animal.species_label }}).
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Data de Inclusão / Início</label>
+                                        <input type="date" class="form-control" name="inclusion_date" value="{{ animal.inclusion_date or today_iso }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-agro">Salvar e Sincronizar Protocolos</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Modal de Visualização Ampliada do QR Code -->
+    <div class="modal fade no-print" id="qrPreviewModal" tabindex="-1" aria-labelledby="qrPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="qrPreviewModalLabel">
+                        QR Code &mdash; Etiqueta #{{ animal.ear_tag }} ({{ animal.species_label }})
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <img
+                        src="{{ qr_image_url }}"
+                        alt="QR Code ampliado da Etiqueta {{ animal.ear_tag }}"
+                        class="img-fluid border rounded-4 p-3 bg-white"
+                        style="max-width: 320px;"
+                    >
+                    <p class="small text-muted mt-3 mb-0">
+                        Aponte a câmera de qualquer smartphone para consultar a identificação do animal.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-center">
+                    {% if is_property_authenticated %}
+                        <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-outline-agro">
+                            <i class="bi bi-card-heading me-1"></i> Placa de Baia
+                        </a>
+                        <a href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}" class="btn btn-agro">
+                            <i class="bi bi-download me-1"></i> Baixar PNG
+                        </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Etiqueta exclusiva para impressão limpa (@media print) -->
+    <div class="print-only-label">
+        <div style="font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #EA526F;">
+            Animora &bull; {{ animal.species_label }}
+        </div>
+        <div style="font-size: 26px; font-weight: 800; margin-top: 6px; color: #070600;">
+            Etiqueta #{{ animal.ear_tag }}
+        </div>
+        {% if animal.name %}
+            <div style="font-size: 16px; color: #444; margin-top: 2px;">{{ animal.name }}</div>
+        {% endif %}
+        {% if animal.housing_display %}
+            <div style="font-size: 13px; color: #4A7856; font-weight: 700; margin-top: 2px;">{{ animal.housing_display }}</div>
+        {% endif %}
+        <img src="{{ qr_image_url }}" alt="QR Code Etiqueta {{ animal.ear_tag }}">
+        <div style="font-size: 12px; color: #555; word-break: break-all;">
+            {{ public_url }}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

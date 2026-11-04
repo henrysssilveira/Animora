@@ -1,0 +1,1091 @@
+:root {
+    /* Paleta Oficial Animora */
+    --animora-pink: #EA526F;
+    --animora-pink-hover: #D43B59;
+    --animora-pink-soft: #FDECEF;
+    --animora-pink-border: #F8C6D0;
+
+    --animora-black: #070600;
+    --animora-black-soft: #181712;
+
+    --animora-ghost: #F7F7FF;
+    --animora-ghost-alt: #EFEFF9;
+    --animora-border: #DFDFF0;
+    --animora-white: #FFFFFF;
+
+    --animora-mustard: #FCDC4D;
+    --animora-mustard-soft: #FFF9DB;
+    --animora-mustard-ink: #524300;
+
+    --animora-fern: #4A7856;
+    --animora-fern-hover: #3B6145;
+    --animora-fern-soft: #EAF3EC;
+
+    --animora-muted: #5A5A6E;
+
+    /* Aliases internos de compatibilidade com classes existentes */
+    --agro-green-dark: var(--animora-pink);
+    --agro-green-deeper: var(--animora-black);
+    --agro-olive: var(--animora-fern);
+    --agro-olive-light: var(--animora-fern-soft);
+    --agro-sage: var(--animora-pink);
+    --agro-beige-bg: var(--animora-ghost);
+    --agro-beige-soft: var(--animora-ghost-alt);
+    --agro-border: var(--animora-border);
+    --agro-white: var(--animora-white);
+    --agro-text: var(--animora-black);
+    --agro-muted: var(--animora-muted);
+
+    /* Harmonização com variáveis nativas do Bootstrap 5.3 */
+    --bs-body-bg: #F7F7FF;
+    --bs-body-color: #070600;
+    --bs-primary: #EA526F;
+    --bs-primary-rgb: 234, 82, 111;
+    --bs-success: #4A7856;
+    --bs-success-rgb: 74, 120, 86;
+    --bs-success-bg-subtle: #EAF3EC;
+    --bs-success-border-subtle: #C5DEC9;
+    --bs-success-text-emphasis: #2D4D35;
+    --bs-warning: #FCDC4D;
+    --bs-warning-rgb: 252, 220, 77;
+    --bs-warning-bg-subtle: #FFF9DB;
+    --bs-warning-border-subtle: #F7E48B;
+    --bs-warning-text-emphasis: #594800;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--animora-ghost);
+    color: var(--animora-black);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.text-brand {
+    color: var(--animora-pink) !important;
+}
+
+.text-fern {
+    color: var(--animora-fern) !important;
+}
+
+/* Navbar (Pitch Black + Ghost White + Bubblegum Pink) */
+.navbar-animora,
+.navbar-bovitrack {
+    background-color: var(--animora-black);
+    border-bottom: 2px solid rgba(234, 82, 111, 0.45);
+    box-shadow: 0 4px 18px rgba(7, 6, 0, 0.22);
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
+.navbar-brand-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--animora-pink) 0%, var(--animora-pink-hover) 100%);
+    box-shadow: 0 3px 10px rgba(234, 82, 111, 0.38);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--animora-ghost);
+}
+
+.navbar-animora .navbar-brand,
+.navbar-bovitrack .navbar-brand {
+    color: var(--animora-ghost);
+    letter-spacing: -0.01em;
+}
+
+.navbar-animora .nav-link,
+.navbar-bovitrack .nav-link {
+    color: rgba(247, 247, 255, 0.82);
+    font-weight: 500;
+    padding: 0.5rem 0.95rem !important;
+    border-radius: 9px;
+    transition: all 0.2s ease;
+}
+
+.navbar-animora .nav-link:hover,
+.navbar-bovitrack .nav-link:hover {
+    color: var(--animora-ghost);
+    background-color: rgba(247, 247, 255, 0.1);
+}
+
+.navbar-animora .nav-link.active,
+.navbar-bovitrack .nav-link.active {
+    color: var(--animora-ghost);
+    background-color: rgba(234, 82, 111, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(234, 82, 111, 0.55);
+}
+
+/* Badges de Nível de Acesso */
+.badge-level-common {
+    background-color: rgba(247, 247, 255, 0.14);
+    color: var(--animora-ghost);
+    border: 1px solid rgba(247, 247, 255, 0.28);
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.badge-level-property {
+    background-color: var(--animora-fern);
+    color: var(--animora-ghost);
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.badge-level-admin {
+    background-color: var(--animora-mustard);
+    color: var(--animora-black);
+    font-weight: 800;
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.badge-brand-pill {
+    background-color: var(--animora-pink-soft);
+    color: var(--animora-pink-hover);
+    border: 1px solid var(--animora-pink-border);
+    font-weight: 700;
+}
+
+/* Botões customizados */
+.btn-agro,
+.btn-animora {
+    background-color: var(--animora-pink);
+    border-color: var(--animora-pink);
+    color: #FFFFFF;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.btn-agro:hover,
+.btn-agro:focus,
+.btn-animora:hover,
+.btn-animora:focus {
+    background-color: var(--animora-pink-hover);
+    border-color: var(--animora-pink-hover);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(234, 82, 111, 0.28);
+}
+
+.btn-olive {
+    background-color: var(--animora-fern);
+    border-color: var(--animora-fern);
+    color: #FFFFFF;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.btn-olive:hover,
+.btn-olive:focus {
+    background-color: var(--animora-fern-hover);
+    border-color: var(--animora-fern-hover);
+    color: #FFFFFF;
+}
+
+.btn-mustard {
+    background-color: var(--animora-mustard);
+    border-color: var(--animora-mustard);
+    color: var(--animora-black);
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.btn-mustard:hover,
+.btn-mustard:focus {
+    background-color: #F4CF2C;
+    border-color: #F4CF2C;
+    color: var(--animora-black);
+}
+
+.btn-outline-agro {
+    color: var(--animora-pink);
+    border: 1.5px solid var(--animora-pink);
+    background-color: transparent;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.55rem 1.15rem;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-agro:hover {
+    background-color: var(--animora-pink);
+    color: #FFFFFF;
+}
+
+/* Cards e Superfícies */
+.card-agro {
+    background-color: var(--animora-white);
+    border: 1px solid var(--animora-border);
+    border-radius: 16px;
+    box-shadow: 0 6px 22px rgba(7, 6, 0, 0.04);
+}
+
+.hero-banner {
+    background:
+        radial-gradient(circle at top right, rgba(234, 82, 111, 0.38), transparent 48%),
+        linear-gradient(135deg, var(--animora-black) 0%, #1C161D 65%, #2D1620 100%);
+    color: var(--animora-ghost);
+    border: 1px solid rgba(234, 82, 111, 0.3);
+    border-radius: 20px;
+    padding: 2.1rem;
+    box-shadow: 0 12px 28px rgba(7, 6, 0, 0.16);
+}
+
+.stat-card {
+    background-color: var(--animora-white);
+    border: 1px solid var(--animora-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(234, 82, 111, 0.1);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.stat-icon-green,
+.stat-icon-pink {
+    background-color: var(--animora-pink-soft);
+    color: var(--animora-pink);
+}
+
+.stat-icon-olive {
+    background-color: var(--animora-fern-soft);
+    color: var(--animora-fern);
+}
+
+.stat-icon-beige,
+.stat-icon-mustard {
+    background-color: var(--animora-mustard-soft);
+    color: var(--animora-mustard-ink);
+}
+
+/* Badges */
+.badge-ear-tag {
+    background-color: var(--animora-black);
+    color: var(--animora-ghost);
+    border: 1px solid var(--animora-black);
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.42rem 0.78rem;
+    border-radius: 8px;
+    letter-spacing: 0.03em;
+}
+
+.badge-sex-male {
+    background-color: var(--animora-ghost-alt);
+    color: var(--animora-black);
+    border: 1px solid var(--animora-border);
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+}
+
+.badge-sex-female {
+    background-color: var(--animora-pink-soft);
+    color: var(--animora-pink-hover);
+    border: 1px solid var(--animora-pink-border);
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+}
+
+/* Formulários */
+.form-label {
+    font-weight: 600;
+    color: var(--animora-black);
+    font-size: 0.92rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border: 1.5px solid var(--animora-border);
+    padding: 0.65rem 0.9rem;
+    background-color: var(--animora-ghost);
+    color: var(--animora-black);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--animora-white);
+    border-color: var(--animora-pink);
+    box-shadow: 0 0 0 0.22rem rgba(234, 82, 111, 0.18);
+}
+
+/* Seletor de Nível de Acesso */
+.access-level-card {
+    border: 2px solid var(--animora-border);
+    background-color: var(--animora-ghost);
+    border-radius: 14px;
+    padding: 0.95rem 1rem;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    height: 100%;
+}
+
+.access-level-card:hover {
+    border-color: var(--animora-pink-border);
+    background-color: var(--animora-white);
+}
+
+.btn-check:checked + .access-level-card {
+    border-color: var(--animora-pink);
+    background-color: var(--animora-pink-soft);
+    box-shadow: 0 4px 14px rgba(234, 82, 111, 0.14);
+}
+
+/* Tabela do Rebanho */
+.table-agro thead th {
+    background-color: var(--animora-ghost-alt);
+    color: var(--animora-black);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--animora-border);
+    padding: 0.9rem 1rem;
+}
+
+.table-agro tbody td {
+    padding: 0.95rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--animora-ghost-alt);
+}
+
+.table-agro tbody tr:hover {
+    background-color: #FAFAFF;
+}
+
+/* Ficha Individual & QR Code */
+.detail-field {
+    background-color: var(--animora-ghost);
+    border: 1px solid var(--animora-border);
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem;
+    height: 100%;
+}
+
+.detail-field-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--animora-muted);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.detail-field-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--animora-black);
+    word-break: break-word;
+}
+
+.qr-frame {
+    background-color: #FFFFFF;
+    border: 2px dashed var(--animora-pink-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: inline-block;
+}
+
+.qr-frame img {
+    max-width: 220px;
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Rodapé */
+.footer-animora,
+.footer-bovitrack {
+    background-color: var(--animora-black);
+    border-top: 2px solid rgba(234, 82, 111, 0.35);
+    color: rgba(247, 247, 255, 0.72);
+    font-size: 0.88rem;
+}
+
+/* Impressão limpa da etiqueta de QR Code */
+.print-only-label {
+    display: none;
+}
+
+/* ==========================================================================
+   Módulo de Gestão Sanitária e Vacinação Inteligente
+   ========================================================================== */
+
+.sanitary-subnav {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding: 0.45rem;
+    background-color: var(--animora-white);
+    border: 1px solid var(--animora-border);
+    border-radius: 14px;
+    scrollbar-width: thin;
+}
+
+.sanitary-subnav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    padding: 0.55rem 0.95rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--animora-muted);
+    text-decoration: none;
+    transition: all 0.18s ease;
+}
+
+.sanitary-subnav-link:hover {
+    background-color: var(--animora-ghost);
+    color: var(--animora-pink);
+}
+
+.sanitary-subnav-link.active {
+    background-color: var(--animora-pink);
+    color: var(--animora-white);
+    box-shadow: 0 3px 10px rgba(234, 82, 111, 0.26);
+}
+
+/* Badges de Faixa Etária */
+.badge-age-newborn {
+    background-color: var(--animora-pink-soft);
+    color: var(--animora-pink-hover);
+    border: 1px solid var(--animora-pink-border);
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
+
+.badge-age-calf {
+    background-color: var(--animora-fern-soft);
+    color: var(--animora-fern-hover);
+    border: 1px solid #C5DEC9;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
+
+.badge-age-young {
+    background-color: var(--animora-mustard-soft);
+    color: var(--animora-mustard-ink);
+    border: 1px solid #F3DC75;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
+
+.badge-age-adult {
+    background-color: var(--animora-ghost-alt);
+    color: var(--animora-black);
+    border: 1px solid #CFCFE6;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
+
+/* Badges dos 7 Estados Sanitários */
+.badge-status-pending {
+    background-color: var(--animora-mustard-soft);
+    color: var(--animora-mustard-ink);
+    border: 1px solid #F3DC75;
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-upcoming {
+    background-color: var(--animora-ghost-alt);
+    color: #2B2B4F;
+    border: 1px solid #CFCFE8;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-overdue {
+    background-color: var(--animora-pink-soft);
+    color: #B42340;
+    border: 1px solid var(--animora-pink-border);
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-applied {
+    background-color: var(--animora-fern-soft);
+    color: var(--animora-fern-hover);
+    border: 1px solid #BFE0C6;
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-not-done {
+    background-color: #F3EFEA;
+    color: #5E503F;
+    border: 1px solid #DED5CA;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-unknown {
+    background-color: var(--animora-ghost-alt);
+    color: var(--animora-muted);
+    border: 1px dashed #BFC0D6;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.badge-status-cancelled {
+    background-color: #F1F1F5;
+    color: #6C757D;
+    border: 1px solid #DCDCE6;
+    font-weight: 600;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    text-decoration: line-through;
+}
+
+/* KPIs compactos do Dashboard */
+.kpi-mini-card {
+    background-color: var(--animora-white);
+    border: 1px solid var(--animora-border);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    height: 100%;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.kpi-mini-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--animora-pink-border);
+    box-shadow: 0 6px 16px rgba(234, 82, 111, 0.1);
+}
+
+.kpi-mini-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--animora-black);
+}
+
+/* Calendário Sanitário Mensal */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--animora-muted);
+    padding: 0.4rem 0;
+}
+
+.calendar-day-cell {
+    background-color: var(--animora-white);
+    border: 1px solid var(--animora-border);
+    border-radius: 12px;
+    min-height: 104px;
+    padding: 0.55rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    transition: all 0.16s ease;
+    cursor: pointer;
+}
+
+.calendar-day-cell:hover {
+    border-color: var(--animora-pink);
+    box-shadow: 0 4px 12px rgba(234, 82, 111, 0.12);
+}
+
+.calendar-day-cell.outside-month {
+    background-color: var(--animora-ghost-alt);
+    opacity: 0.52;
+    cursor: default;
+}
+
+.calendar-day-cell.is-today {
+    border: 2px solid var(--animora-pink);
+    background-color: #FFF9FA;
+}
+
+.calendar-day-cell.selected-day {
+    outline: 2px solid var(--animora-black);
+    background-color: var(--animora-mustard-soft);
+}
+
+.calendar-day-num {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--animora-black);
+}
+
+.calendar-pill {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.42rem;
+    border-radius: 6px;
+    margin-top: 0.22rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 767.98px) {
+    .calendar-grid {
+        gap: 0.3rem;
+    }
+    .calendar-day-cell {
+        min-height: 70px;
+        padding: 0.35rem;
+        border-radius: 9px;
+    }
+    .calendar-pill {
+        font-size: 0.62rem;
+        padding: 0.1rem 0.25rem;
+    }
+}
+
+/* Cartelas de Campanha — Barra de Progresso */
+.progress-agro {
+    height: 10px;
+    background-color: var(--animora-ghost-alt);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-agro .progress-bar {
+    background: linear-gradient(90deg, var(--animora-pink) 0%, var(--animora-fern) 100%);
+    border-radius: 999px;
+}
+
+/* Linha do Tempo Cronológica da Carteira Sanitária */
+.sanitary-timeline {
+    position: relative;
+    padding-left: 1.75rem;
+}
+
+.sanitary-timeline::before {
+    content: "";
+    position: absolute;
+    left: 0.55rem;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    width: 2px;
+    background-color: var(--animora-border);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -1.65rem;
+    top: 0.25rem;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: var(--animora-pink);
+    color: var(--animora-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    border: 2px solid var(--animora-white);
+    box-shadow: 0 0 0 2px var(--animora-pink-border);
+}
+
+.timeline-card {
+    background-color: var(--animora-ghost);
+    border: 1px solid var(--animora-border);
+    border-radius: 12px;
+    padding: 0.9rem 1.05rem;
+}
+
+/* ==========================================================================
+   Módulo de Impressão em Lote de Etiquetas QR Code
+   ========================================================================== */
+
+.label-sheet-preview-stage {
+    background: repeating-linear-gradient(
+        45deg,
+        #EFEFF9,
+        #EFEFF9 12px,
+        #E7E7F5 12px,
+        #E7E7F5 24px
+    );
+    border: 1px solid var(--animora-border);
+    border-radius: 16px;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+}
+
+.label-sheet-paper {
+    background-color: #FFFFFF;
+    box-shadow: 0 12px 32px rgba(7, 6, 0, 0.14);
+    border: 1px solid #D5D5E6;
+    position: relative;
+    box-sizing: border-box;
+    transition: width 0.16s ease, height 0.16s ease, padding 0.16s ease;
+}
+
+.label-sheet-grid {
+    display: grid;
+    box-sizing: border-box;
+}
+
+.label-preview-card {
+    background-color: #FFFFFF;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    color: var(--animora-black);
+    position: relative;
+    user-select: none;
+}
+
+.label-preview-card.with-cut-border {
+    border: 1px dashed #C6C6DC;
+    border-radius: 3px;
+}
+
+.label-preview-card.layout-vertical {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.label-preview-card.layout-horizontal {
+    flex-direction: row;
+    text-align: left;
+}
+
+.label-preview-qr {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #FFFFFF;
+}
+
+.label-preview-qr img,
+.label-preview-qr svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.label-preview-meta {
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.label-preview-brand {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--animora-pink);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-preview-number {
+    font-weight: 800;
+    color: var(--animora-black);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-preview-custom {
+    color: var(--animora-fern);
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-preview-empty-slot {
+    border: 1px dotted #DFDFF0;
+    border-radius: 3px;
+    background-color: var(--animora-ghost);
+}
+
+/* ==========================================================================
+   Multi-Espécie (Bovinos, Equinos, Ovinos), Catálogo Preventivo & Placa de Baia
+   ========================================================================== */
+.badge-species-bovino,
+.badge-species-equino,
+.badge-species-ovino {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+}
+
+.badge-species-bovino {
+    background-color: rgba(74, 120, 86, 0.15);
+    color: #2d5237;
+    border: 1px solid rgba(74, 120, 86, 0.35);
+}
+
+.badge-species-equino {
+    background-color: rgba(234, 82, 111, 0.14);
+    color: #b82d48;
+    border: 1px solid rgba(234, 82, 111, 0.35);
+}
+
+.badge-species-ovino {
+    background-color: rgba(252, 220, 77, 0.32);
+    color: #5c4b00;
+    border: 1px solid rgba(220, 185, 30, 0.55);
+}
+
+.badge-item-vacina,
+.badge-item-vermifugo,
+.badge-item-exame {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+}
+
+.badge-item-vacina {
+    background-color: rgba(74, 120, 86, 0.15);
+    color: #2d5237;
+}
+
+.badge-item-vermifugo {
+    background-color: rgba(252, 220, 77, 0.35);
+    color: #5c4b00;
+}
+
+.badge-item-exame {
+    background-color: rgba(234, 82, 111, 0.14);
+    color: #b82d48;
+}
+
+.badge-routine-hoof,
+.badge-routine-shoeing,
+.badge-routine-shearing,
+.badge-routine-weight,
+.badge-routine-dental,
+.badge-routine-famacha {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.24rem 0.62rem;
+    border-radius: 999px;
+    background-color: rgba(7, 6, 0, 0.07);
+    color: var(--animora-black);
+}
+
+.species-selector-card {
+    cursor: pointer;
+    border: 2px solid #DFDFF0;
+    border-radius: 1rem;
+    padding: 0.9rem 1rem;
+    background-color: #FFFFFF;
+    transition: all 0.16s ease;
+    height: 100%;
+}
+
+.species-selector-card:hover {
+    border-color: rgba(234, 82, 111, 0.55);
+    transform: translateY(-1px);
+}
+
+.species-selector-card.active {
+    border-color: var(--animora-pink);
+    background-color: rgba(234, 82, 111, 0.06);
+    box-shadow: 0 6px 18px rgba(234, 82, 111, 0.12);
+}
+
+/* Placa de Baia / Cocho & Ficha Cadastral Imprimível */
+.stall-plaque-sheet {
+    background: #FFFFFF;
+    color: #070600;
+    border: 3px solid #070600;
+    border-radius: 20px;
+    max-width: 820px;
+    margin: 0 auto;
+    overflow: hidden;
+    box-shadow: 0 12px 34px rgba(7, 6, 0, 0.12);
+}
+
+.stall-plaque-header {
+    background: #070600;
+    color: #F7F7FF;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 5px solid #EA526F;
+}
+
+.stall-plaque-qr-box {
+    border: 2px solid #070600;
+    border-radius: 16px;
+    padding: 0.85rem;
+    background: #FFFFFF;
+    display: inline-block;
+}
+
+.stall-plaque-qr-box img {
+    width: 210px;
+    height: 210px;
+    display: block;
+}
+
+.stall-field-box {
+    background: #F7F7FF;
+    border: 1px solid #DCDCEB;
+    border-radius: 12px;
+    padding: 0.65rem 0.9rem;
+    height: 100%;
+}
+
+.stall-field-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #575666;
+}
+
+.stall-field-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #070600;
+}
+
+@media print {
+    body {
+        background: #FFFFFF !important;
+        color: #070600 !important;
+    }
+
+    .no-print,
+    .navbar-animora,
+    .navbar-bovitrack,
+    .footer-animora,
+    .footer-bovitrack,
+    .alert,
+    .modal {
+        display: none !important;
+    }
+
+    .stall-plaque-sheet {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        max-width: 100% !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-only-label {
+        display: block !important;
+        text-align: center;
+        border: 2px solid #070600;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 420px;
+        margin: 1.5rem auto;
+    }
+
+    .print-only-label img {
+        width: 260px;
+        height: 260px;
+        margin: 1rem auto;
+        display: block;
+    }
+}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Criar QR Codes em Lote — Animora{% endblock %}
+
+{% block content %}
+{% include "labels/_subnav.html" %}
+
+<script id="labelPresetsJson" type="application/json">{{ presets | tojson }}</script>
+<script id="pageFormatsJson" type="application/json">{{ page_formats | tojson }}</script>
+
+<form method="POST" action="{{ url_for('labels.generator') }}" id="labelConfiguratorForm">
+    <input type="hidden" name="range_mode" value="{{ form_data.get('range_mode', 'quantity') }}">
+
+    <div class="row g-4">
+        <!-- Coluna Esquerda: Numeração em Lote + Configurador de Dimensões -->
+        <div class="col-lg-6">
+            <div class="card-agro p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">1. Sequência e Quantidade em Lote</h5>
+                        <small class="text-muted">Cada etiqueta recebe um token aleatório seguro (UUID) exclusivo no QR Code</small>
+                    </div>
+                    <span id="sequenceRangeSummary" class="badge badge-brand-pill px-3 py-2 rounded-pill">
+                        AN-00001
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6 col-sm-4">
+                        <label class="form-label">Prefixo</label>
+                        <input type="text" maxlength="20" class="form-control text-uppercase" name="prefix" value="{{ form_data.get('prefix', 'AN-') }}" placeholder="AN-">
+                    </div>
+
+                    <div class="col-6 col-sm-4">
+                        <label class="form-label">Dígitos (Zeros)</label>
+                        <input type="number" min="1" max="10" class="form-control" name="padding_digits" value="{{ form_data.get('padding_digits', '5') }}" required>
+                    </div>
+
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label d-flex justify-content-between align-items-center">
+                            <span>Quantidade <span class="text-danger">*</span></span>
+                            <button type="button" id="fillSingleSheetQtyBtn" class="btn btn-link btn-sm p-0 text-success text-decoration-none fw-semibold" title="Definir exatamente a capacidade de 1 folha">
+                                1 folha
+                            </button>
+                        </label>
+                        <input type="number" min="1" max="500" class="form-control" name="quantity" value="{{ form_data.get('quantity', '24') }}" required>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Numeração Inicial <span class="text-danger">*</span></label>
+                        <input type="number" min="0" max="99999999" class="form-control" name="start_number" value="{{ form_data.get('start_number', '1') }}" required>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Numeração Final <span class="text-danger">*</span></label>
+                        <input type="number" min="0" max="99999999" class="form-control" name="end_number" value="{{ form_data.get('end_number', '24') }}" required>
+                    </div>
+
+                    <div class="col-md-7">
+                        <label class="form-label">Identificação do Conjunto <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="text" maxlength="140" class="form-control" name="batch_name" value="{{ form_data.get('batch_name', '') }}" placeholder="Ex.: Lote Brincos Abril — Recria">
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">Propriedade <span class="text-muted fw-normal">(opcional)</span></label>
+                        <select class="form-select" name="property_id">
+                            <option value="">Uso geral da organização</option>
+                            {% for p in ctx.properties %}
+                                <option value="{{ p.id }}" {% if form_data.get('property_id') == p.id %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-agro p-4">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">2. Personalização do Layout (mm)</h5>
+                        <small class="text-muted">Configure folha, dimensões da etiqueta, espaçamentos, margens e QR Code</small>
+                    </div>
+                    <span id="sheetsCountSummary" class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                        24/folha
+                    </span>
+                </div>
+
+                {% set cfg = form_data %}
+                {% set custom_text_val = form_data.get('custom_text', '') %}
+                {% include "labels/_layout_fields.html" %}
+
+                <hr class="my-4 opacity-25">
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                    <div class="small text-muted">
+                        <i class="bi bi-shield-lock text-success me-1"></i>
+                        As etiquetas serão salvas em <code>tag_units</code> como <strong>Disponíveis</strong>, sem criar animais automaticamente.
+                    </div>
+                    <button type="submit" class="btn btn-agro px-4 py-2 flex-shrink-0" {% if tag_migration_error %}disabled{% endif %}>
+                        <i class="bi bi-qr-code-scan me-1"></i> Gerar Etiquetas &amp; QR Codes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Editor & Pré-visualização Proporcional das Folhas -->
+        <div class="col-lg-6">
+            <div class="card-agro p-4 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">
+                            <i class="bi bi-eye text-success me-1"></i> Pré-visualização de Impressão
+                        </h5>
+                        <small class="text-muted">Simulação fiel em escala proporcional antes de gravar e imprimir</small>
+                    </div>
+                    <span class="badge bg-light text-secondary border">Escala Milimétrica Ativa</span>
+                </div>
+
+                <div id="liveLayoutFitAlert" class="alert alert-success rounded-3 py-2 px-3 small mb-3"></div>
+
+                <div id="liveSheetsStage" class="label-sheet-preview-stage" style="max-height: 760px; overflow-y: auto;">
+                    <!-- Renderizado em tempo real por static/js/labels.js -->
+                </div>
+            </div>
+
+            {% if recent_batches %}
+            <div class="card-agro p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-clock-history text-success me-1"></i> Conjuntos Gerados Recentemente
+                    </h6>
+                    <a href="{{ url_for('labels.history') }}" class="btn btn-sm btn-outline-agro">Ver histórico completo</a>
+                </div>
+                <div class="d-grid gap-2">
+                    {% for b in recent_batches %}
+                        <div class="p-3 rounded-3 border bg-light-subtle d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <div class="fw-bold text-dark">{{ b.batch_name }}</div>
+                                <div class="small text-muted">
+                                    {{ b.quantity }} etiqueta(s) &bull; {{ b.available_count }} disponível(is) &bull; {{ b.created_at | datetime_br }}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('labels.batch_detail', batch_id=b.id) }}" class="btn btn-sm btn-outline-agro" title="Visualizar todas as etiquetas">
+                                    <i class="bi bi-eye"></i> Abrir
+                                </a>
+                                <a href="{{ url_for('labels.export_pdf', batch_id=b.id) }}" class="btn btn-sm btn-agro" title="Baixar PDF em escala real">
+                                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                                </a>
+                                <a href="{{ url_for('labels.print_sheet', batch_id=b.id) }}" target="_blank" class="btn btn-sm btn-olive" title="Reimprimir folha">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Placa de Baia &amp; Ficha Cadastral #{{ animal.ear_tag }} | Animora
+{% endblock %}
+
+{% block content %}
+<!-- Barra de Controle (oculta na impressão) -->
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4 no-print">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('animals_list') }}" class="text-decoration-none text-muted">Plantel</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="text-decoration-none text-muted">#{{ animal.ear_tag }}</a></li>
+                <li class="breadcrumb-item active">Placa de Baia / Ficha QR</li>
+            </ol>
+        </nav>
+        <h1 class="h4 fw-bold mb-0">
+            <i class="bi bi-card-heading text-brand me-1"></i>
+            Placa de Baia / Cocho &amp; Ficha Cadastral Imprimível
+        </h1>
+        <p class="text-muted small mb-0">
+            Ideal para plastificar e fixar na porta da baia, cocho, aprisco ou arquivar na pasta cadastral do animal.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group" role="group" aria-label="Modo do documento">
+            <a
+                href="{{ url_for('animal_stall_card', token=animal.qr_code_token, mode='baia') }}"
+                class="btn btn-sm {% if card_mode == 'baia' %}btn-agro{% else %}btn-outline-secondary{% endif %}"
+            >
+                <i class="bi bi-door-open me-1"></i> Placa de Baia / Cocho (Pública)
+            </a>
+            <a
+                href="{{ url_for('animal_stall_card', token=animal.qr_code_token, mode='ficha') }}"
+                class="btn btn-sm {% if card_mode == 'ficha' %}btn-agro{% else %}btn-outline-secondary{% endif %}"
+            >
+                <i class="bi bi-file-earmark-medical me-1"></i> Ficha Cadastral Completa (Interna)
+            </a>
+        </div>
+
+        <button type="button" onclick="window.print()" class="btn btn-olive btn-sm px-3 py-2">
+            <i class="bi bi-printer-fill me-1"></i> Imprimir / Salvar PDF
+        </button>
+
+        <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="btn btn-outline-secondary btn-sm rounded-3 py-2">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Folha Imprimível -->
+<div class="stall-plaque-sheet mb-4">
+    <div class="stall-plaque-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-brand-badge" style="width: 44px; height: 44px; font-size: 1.35rem;">
+                <i class="bi bi-qr-code-scan"></i>
+            </span>
+            <div>
+                <div class="text-uppercase fw-bold small" style="letter-spacing: 0.12em; color: #EA526F;">
+                    ANIMORA &bull; {% if card_mode == 'baia' %}IDENTIFICAÇÃO DE ALOJAMENTO / BAIA{% else %}FICHA CADASTRAL INTERNA{% endif %}
+                </div>
+                <div class="h3 fw-bold mb-0 text-white">
+                    {{ animal.name or ('Animal #' ~ animal.ear_tag) }}
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <div class="small text-white text-opacity-75 text-uppercase fw-semibold">Código Oficial</div>
+            <div class="h4 fw-bold mb-0" style="color: #FCDC4D;">#{{ animal.ear_tag }}</div>
+        </div>
+    </div>
+
+    <div class="p-4 p-md-4">
+        <div class="row g-4 align-items-center">
+            <!-- Dados de Identificação, Origem e Baia -->
+            <div class="col-md-7">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="stall-field-box">
+                            <div class="stall-field-label">Espécie &amp; Sexo</div>
+                            <div class="stall-field-value">{{ animal.species_emoji }} {{ animal.species_label }} &bull; {{ animal.sex }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="stall-field-box">
+                            <div class="stall-field-label">Raça</div>
+                            <div class="stall-field-value">{{ animal.breed }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="stall-field-box">
+                            <div class="stall-field-label">Pelagem</div>
+                            <div class="stall-field-value">{{ animal.coat_color or "Não informada" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="stall-field-box">
+                            <div class="stall-field-label">Nascimento &amp; Faixa Etária</div>
+                            <div class="stall-field-value">
+                                {{ animal.birth_date | date_br }}
+                                <div class="small fw-semibold text-muted">{{ animal.age_category_name }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="stall-field-box" style="border-left: 4px solid #EA526F;">
+                            <div class="stall-field-label">Alojamento / Baia / Localização</div>
+                            <div class="stall-field-value">
+                                {% if animal.housing_display %}
+                                    <i class="bi bi-house-heart-fill text-brand me-1"></i>{{ animal.housing_display }}
+                                {% else %}
+                                    <span class="text-muted fw-semibold">Alojamento não especificado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="stall-field-box" style="border-left: 4px solid #4A7856;">
+                            <div class="stall-field-label">Propriedade &amp; Origem</div>
+                            <div class="stall-field-value">
+                                {{ animal.property_name }}
+                                {% if animal.property_location %}
+                                    <span class="small fw-semibold text-muted">({{ animal.property_location }})</span>
+                                {% endif %}
+                                <div class="small fw-semibold" style="color: #4A7856;">{{ animal.origin_label }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Code de Leitura Rápida -->
+            <div class="col-md-5 text-center">
+                <div class="stall-plaque-qr-box">
+                    <img src="{{ qr_image_url }}" alt="QR Code #{{ animal.ear_tag }}">
+                </div>
+                <div class="mt-2 fw-bold small text-uppercase" style="letter-spacing: 0.04em;">
+                    Escaneie para Consultar
+                </div>
+                <div class="small text-muted px-2">
+                    Visitantes veem origem e identificação.<br>
+                    Equipe autenticada acessa <strong>Cocho, Sanidade e Manejo</strong>.
+                </div>
+                <div class="mt-2">
+                    <code class="small text-dark">{{ public_url }}</code>
+                </div>
+            </div>
+        </div>
+
+        {% if card_mode == 'ficha' %}
+            <!-- Bloco Extra Exclusivo da Ficha Cadastral Interna -->
+            <hr class="my-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-uppercase mb-0" style="color: #070600; letter-spacing: 0.05em;">
+                    <i class="bi bi-shield-lock-fill text-brand me-1"></i>
+                    Dados Internos de Manejo &amp; Plano de Cocho (Uso Interno Property / Admin)
+                </h6>
+                <span class="badge bg-warning text-dark">Documento Interno</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <div class="stall-field-box">
+                        <div class="stall-field-label">Registro / Microchip</div>
+                        <div class="stall-field-value fs-6">{{ animal.secondary_id or "—" }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="stall-field-box">
+                        <div class="stall-field-label">Condição Reprodutiva</div>
+                        <div class="stall-field-value fs-6">{{ animal.reproductive_status_label }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="stall-field-box">
+                        <div class="stall-field-label">Lote &amp; Peso Atual</div>
+                        <div class="stall-field-value fs-6">{{ animal.lot_name }} &bull; {{ animal.initial_weight | weight_br }}</div>
+                    </div>
+                </div>
+
+                {% if feeding_plan %}
+                    <div class="col-12">
+                        <div class="stall-field-box" style="background: #FFFDF2; border-color: #E8C735;">
+                            <div class="stall-field-label mb-1">Plano de Cocho / Arraçoamento Ativo — {{ feeding_plan.plan_name }}</div>
+                            <div class="row g-2 small">
+                                <div class="col-sm-6"><strong>Volumoso:</strong> {{ feeding_plan.roughage or "—" }}</div>
+                                <div class="col-sm-6"><strong>Concentrado / Ração:</strong> {{ feeding_plan.concentrate or "—" }}</div>
+                                <div class="col-sm-6"><strong>Suplemento / Mineral:</strong> {{ feeding_plan.supplement_mineral or "—" }}</div>
+                                <div class="col-sm-6"><strong>Horários / Tratos:</strong> {{ feeding_plan.feeding_schedule or "—" }}</div>
+                                {% if feeding_plan.water_and_trough_notes %}
+                                    <div class="col-12 pt-1 border-top"><strong>Cuidados de Cocho:</strong> {{ feeding_plan.water_and_trough_notes }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Variáveis de ambiente e credenciais
+.env
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# QR Codes gerados em tempo de execução (mantém a pasta)
+static/qrcodes/*.png
+
+# IDEs e Sistema Operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

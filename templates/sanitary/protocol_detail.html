@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Protocolo: {{ protocol.name }} — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('sanitary.protocols_view') }}" class="text-decoration-none text-muted">Protocolos</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ protocol.name }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <h1 class="h3 fw-bold mb-0">{{ protocol.name }}</h1>
+            {% set tsp = protocol.target_species or 'bovino' %}
+            {% if tsp in species_meta %}
+                <span class="{{ species_meta[tsp].badge_class }}">
+                    {{ species_meta[tsp].emoji }} {{ species_meta[tsp].plural }}
+                </span>
+            {% else %}
+                <span class="badge bg-dark-subtle text-dark-emphasis">Todas as espécies</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('sanitary.protocol_detail', protocol_id=protocol.id) }}">
+            <input type="hidden" name="form_action" value="sync_protocol">
+            <button type="submit" class="btn btn-sm btn-outline-agro" {% if not protocol.is_active or not protocol.is_validated %}disabled{% endif %}>
+                <i class="bi bi-arrow-repeat me-1"></i> Gerar Pendências p/ Plantel Compatível
+            </button>
+        </form>
+        <a href="{{ url_for('sanitary.protocols_view') }}" class="btn btn-sm btn-olive">Voltar</a>
+    </div>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+<div class="row g-4">
+    <!-- Coluna Esquerda: Nova Regra + Dados do Protocolo -->
+    <div class="col-lg-5">
+        <!-- Adicionar Regra -->
+        <div class="card-agro p-4 mb-4">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-plus-circle text-success me-1"></i> Nova Regra Preventiva
+            </h5>
+
+            {% if not vaccines %}
+                <div class="alert alert-warning small">
+                    Cadastre vacinas, vermífugos ou exames compatíveis no catálogo antes de adicionar regras.
+                    <a href="{{ url_for('sanitary.vaccines_view') }}" class="fw-bold text-dark">Ir para Catálogo Preventivo</a>
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('sanitary.protocol_detail', protocol_id=protocol.id) }}">
+                <input type="hidden" name="form_action" value="add_rule">
+
+                <div class="mb-3">
+                    <label class="form-label">Item do Catálogo Preventivo <span class="text-danger">*</span></label>
+                    <select class="form-select" name="vaccine_id" required>
+                        <option value="">Selecione vacina, vermífugo ou exame...</option>
+                        {% for v in vaccines %}
+                            <option value="{{ v.id }}">[{{ v.item_type_label }}] {{ v.commercial_name }} ({{ v.manufacturer }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Idade Mínima (dias) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="min_age_days" min="0" placeholder="Ex.: 90" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Idade Máxima (dias) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="max_age_days" min="0" placeholder="Ex.: 150" required>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-5">
+                        <label class="form-label">Nº da Dose <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="dose_number" min="1" value="1" required>
+                    </div>
+                    <div class="col-7">
+                        <label class="form-label">Intervalo Reforço (dias)</label>
+                        <input type="number" class="form-control" name="booster_interval_days" min="1" placeholder="Opcional (ex.: 180)">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações Técnicas da Regra</label>
+                    <textarea class="form-control" name="notes" rows="2" placeholder="Orientações do responsável técnico..."></textarea>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="ruleActiveSwitch" name="is_active" value="true" checked>
+                    <label class="form-check-label small fw-semibold" for="ruleActiveSwitch">Regra ativa</label>
+                </div>
+
+                <button type="submit" class="btn btn-agro w-100" {% if not vaccines %}disabled{% endif %}>
+                    Adicionar Regra ao Protocolo
+                </button>
+            </form>
+        </div>
+
+        <!-- Editar Cabeçalho / Validação do Protocolo -->
+        <div class="card-agro p-4">
+            <h6 class="fw-bold mb-3">Configurações, Espécie &amp; Validação</h6>
+            <form method="POST" action="{{ url_for('sanitary.protocol_detail', protocol_id=protocol.id) }}">
+                <input type="hidden" name="form_action" value="update_protocol">
+
+                <div class="mb-2">
+                    <label class="form-label small">Nome</label>
+                    <input type="text" class="form-control form-control-sm" name="name" value="{{ protocol.name }}" required>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-7">
+                        <label class="form-label small">Propriedade</label>
+                        <select class="form-select form-select-sm" name="property_id" required>
+                            {% for p in ctx.properties %}
+                                <option value="{{ p.id }}" {% if protocol.property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label small">Espécie-Alvo</label>
+                        <select class="form-select form-select-sm" name="target_species">
+                            <option value="bovino" {% if protocol.target_species == 'bovino' %}selected{% endif %}>🐄 Bovinos</option>
+                            <option value="equino" {% if protocol.target_species == 'equino' %}selected{% endif %}>🐎 Equinos</option>
+                            <option value="ovino" {% if protocol.target_species == 'ovino' %}selected{% endif %}>🐑 Ovinos</option>
+                            <option value="todas" {% if protocol.target_species == 'todas' %}selected{% endif %}>Todas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small">Categoria Etária</label>
+                        <select class="form-select form-select-sm" name="animal_category">
+                            {% for slug, label in age_categories.items() %}
+                                <option value="{{ slug }}" {% if protocol.animal_category == slug %}selected{% endif %}>{{ label.split(' (')[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">Finalidade</label>
+                        <select class="form-select form-select-sm" name="purpose">
+                            {% for pslug, plabel in protocol_purpose_labels.items() %}
+                                <option value="{{ pslug }}" {% if protocol.purpose == pslug %}selected{% endif %}>{{ plabel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Descrição</label>
+                    <textarea class="form-control form-control-sm" name="description" rows="2">{{ protocol.description or '' }}</textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Responsável Técnico Validador</label>
+                    <input type="text" class="form-control form-control-sm" name="validated_by" value="{{ protocol.validated_by or operator.name }}">
+                </div>
+                <div class="form-check form-switch mb-1">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editValidSwitch" name="is_validated" value="true" {% if protocol.is_validated %}checked{% endif %}>
+                    <label class="form-check-label small" for="editValidSwitch">Validado pelo Responsável Técnico</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editActSwitch" name="is_active" value="true" {% if protocol.is_active %}checked{% endif %}>
+                    <label class="form-check-label small" for="editActSwitch">Protocolo ativo</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-agro w-100">Atualizar Protocolo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Coluna Direita: Regras Sanitárias Configuradas -->
+    <div class="col-lg-7">
+        <div class="card-agro p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Regras Preventivas deste Protocolo ({{ protocol.rules | length }})</h5>
+                {% if not protocol.is_validated %}
+                    <span class="badge-status-pending">Valide o protocolo para gerar pendências</span>
+                {% endif %}
+            </div>
+
+            {% if protocol.rules %}
+                <div class="table-responsive">
+                    <table class="table table-agro align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Item Preventivo</th>
+                                <th>Janela de Idade</th>
+                                <th>Dose &amp; Reforço</th>
+                                <th>Status</th>
+                                <th class="text-end">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in protocol.rules %}
+                                {% set itype = (r.vaccines.item_type if r.vaccines and r.vaccines.item_type else 'vacina') %}
+                                {% set imeta = preventive_item_types.get(itype, preventive_item_types['vacina']) %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ r.vaccines.commercial_name if r.vaccines else 'Preventivo' }}</div>
+                                        <span class="{{ imeta.badge_class }} mt-1 d-inline-block">{{ imeta.label }}</span>
+                                        {% if r.notes %}
+                                            <div class="small text-muted mt-1">{{ r.notes }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small fw-semibold">
+                                        {{ r.min_age_days }} a {{ r.max_age_days }} dias
+                                    </td>
+                                    <td class="small">
+                                        <div>{{ r.dose_number }}ª dose</div>
+                                        {% if r.booster_interval_days %}
+                                            <div class="text-muted">Reforço em {{ r.booster_interval_days }}d</div>
+                                        {% else %}
+                                            <div class="text-muted">Sem intervalo fixo</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if r.is_active %}
+                                            <span class="badge-status-applied">Ativa</span>
+                                        {% else %}
+                                            <span class="badge-status-cancelled">Inativa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="POST" action="{{ url_for('sanitary.rule_toggle', rule_id=r.id) }}">
+                                            <input type="hidden" name="protocol_id" value="{{ protocol.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                {% if r.is_active %}Inativar{% else %}Ativar{% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mt-3 mb-0">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Alterar ou inativar regras preserva integralmente todas as aplicações e históricos já realizados.
+                </p>
+            {% else %}
+                <p class="text-muted small text-center py-5 mb-0">
+                    Nenhuma regra adicionada ainda. Configure a primeira regra no formulário ao lado.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

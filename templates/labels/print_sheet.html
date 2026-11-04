@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imprimir — {{ batch.batch_name }} | Animora</title>
+    <style>
+        /* Configuração estrita da folha física em milímetros */
+        @page {
+            size: {{ layout.page_width_mm }}mm {{ layout.page_height_mm }}mm;
+            margin: 0mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #EFEFF9;
+            color: #070600;
+        }
+
+        .print-toolbar {
+            background-color: #070600;
+            border-bottom: 2px solid #EA526F;
+            color: #F7F7FF;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 3px 12px rgba(7, 6, 0, 0.25);
+        }
+
+        .print-toolbar-title {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .print-toolbar-hint {
+            font-size: 12.5px;
+            opacity: 0.88;
+        }
+
+        .print-toolbar-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-toolbar {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-toolbar-primary {
+            background-color: #EA526F;
+            color: #FFFFFF;
+        }
+
+        .btn-toolbar-olive {
+            background-color: #4A7856;
+            color: #FFFFFF;
+        }
+
+        .btn-toolbar-outline {
+            background-color: transparent;
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+        }
+
+        .sheets-wrapper {
+            padding: 20px 0 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Cada página física em milímetros reais */
+        .print-sheet {
+            width: {{ layout.page_width_mm }}mm;
+            height: {{ layout.page_height_mm }}mm;
+            padding-top: {{ layout.margin_top_mm }}mm;
+            padding-right: {{ layout.margin_right_mm }}mm;
+            padding-bottom: {{ layout.margin_bottom_mm }}mm;
+            padding-left: {{ layout.margin_left_mm }}mm;
+            background-color: #FFFFFF;
+            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            page-break-after: always;
+            break-after: page;
+        }
+
+        .print-sheet:last-child {
+            page-break-after: auto;
+            break-after: auto;
+        }
+
+        .print-grid {
+            display: grid;
+            grid-template-columns: repeat({{ layout.columns }}, {{ layout.label_width_mm }}mm);
+            grid-template-rows: repeat({{ layout.rows }}, {{ layout.label_height_mm }}mm);
+            column-gap: {{ layout.gap_x_mm }}mm;
+            row-gap: {{ layout.gap_y_mm }}mm;
+            width: 100%;
+            height: 100%;
+        }
+
+        .print-label-cell {
+            width: {{ layout.label_width_mm }}mm;
+            height: {{ layout.label_height_mm }}mm;
+            overflow: hidden;
+            display: flex;
+            {% if layout.is_horizontal_card %}
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5mm 2mm;
+            gap: 2mm;
+            text-align: left;
+            {% else %}
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5mm;
+            gap: 1mm;
+            text-align: center;
+            {% endif %}
+            {% if layout.show_border %}
+            border: 0.25mm dashed #B8BFBA;
+            border-radius: 1.5mm;
+            {% endif %}
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .print-qr-box {
+            width: {{ layout.qr_size_mm }}mm;
+            height: {{ layout.qr_size_mm }}mm;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .print-qr-box img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .print-text-col {
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .print-brand {
+            font-size: {{ (layout.font_size_pt * 0.58) | round(1) }}pt;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: #EA526F;
+            line-height: 1.15;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .print-tag-number {
+            font-size: {{ layout.font_size_pt }}pt;
+            font-weight: 800;
+            color: #070600;
+            line-height: 1.15;
+            margin-top: 0.5mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .print-custom-text {
+            font-size: {{ (layout.font_size_pt * 0.64) | round(1) }}pt;
+            font-weight: 600;
+            color: #4A7856;
+            line-height: 1.15;
+            margin-top: 0.5mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media print {
+            html, body {
+                background-color: #FFFFFF !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .sheets-wrapper {
+                padding: 0 !important;
+                gap: 0 !important;
+                display: block !important;
+            }
+
+            .print-sheet {
+                box-shadow: none !important;
+                margin: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-toolbar no-print">
+        <div>
+            <div class="print-toolbar-title">
+                Animora &mdash; {{ batch.batch_name }} ({{ batch.units | length }} etiquetas em {{ batch.total_pages }} folha{{ '' if batch.total_pages == 1 else 's' }})
+            </div>
+            <div class="print-toolbar-hint">
+                Na janela de impressão, selecione <strong>Escala: 100% (Tamanho Real)</strong> e <strong>Margens: Nenhuma</strong> para preservar as medidas exatas em milímetros ({{ layout.label_width_mm }} × {{ layout.label_height_mm }} mm).
+            </div>
+        </div>
+        <div class="print-toolbar-actions">
+            <button type="button" class="btn-toolbar btn-toolbar-primary" onclick="window.print()">
+                Imprimir Agora
+            </button>
+            <a href="{{ url_for('labels.export_pdf', batch_id=batch.id) }}" class="btn-toolbar btn-toolbar-olive">
+                Baixar PDF Vetorial (1:1 mm)
+            </a>
+            <a href="{{ url_for('labels.batch_detail', batch_id=batch.id) }}" class="btn-toolbar btn-toolbar-outline">
+                Voltar ao Editor
+            </a>
+        </div>
+    </div>
+
+    <div class="sheets-wrapper">
+        {% for page_units in batch.pages %}
+            <section class="print-sheet">
+                <div class="print-grid">
+                    {% for u in page_units %}
+                        <div class="print-label-cell">
+                            <div class="print-qr-box">
+                                <img
+                                    src="{{ url_for('static', filename='qrcodes/' ~ u.qr_token ~ '.png') }}"
+                                    alt="QR {{ u.tag_number }}"
+                                >
+                            </div>
+                            <div class="print-text-col">
+                                <div class="print-brand">ANIMORA</div>
+                                <div class="print-tag-number">{{ u.tag_number }}</div>
+                                {% set txt = u.custom_text or batch.custom_text %}
+                                {% if txt %}
+                                    <div class="print-custom-text">{{ txt }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+
+    {% if auto_print %}
+    <script>
+        window.addEventListener("load", () => {
+            setTimeout(() => window.print(), 350);
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

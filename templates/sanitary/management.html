@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Rotinas de Manejo (Cascos, Tosquia &amp; Pesagem) — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Rotinas Zootécnicas &amp; Manejo por Espécie</h1>
+        <p class="text-muted small mb-0">
+            Controle dedicado de casqueamento, ferrageamento (equinos), tosquia e Famacha (ovinos), odontologia e pesagem corporal.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        {% if ctx and ctx.properties %}
+            <form method="GET" action="{{ url_for('sanitary.management_routines_view') }}" class="d-flex flex-wrap gap-2">
+                <select name="property_id" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Todas as propriedades</option>
+                    {% for p in ctx.properties %}
+                        <option value="{{ p.id }}" {% if selected_property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="species" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
+                    {% for sp_slug, sp_info in species_meta.items() %}
+                        <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
+                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
+
+        {% if mgmt and mgmt.migration_004_ready and animals %}
+            <button type="button" class="btn btn-sm btn-agro" data-bs-toggle="modal" data-bs-target="#registerManagementGlobalModal">
+                <i class="bi bi-plus-lg me-1"></i> Registrar Manejo
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if not migration_error %}
+    {% if mgmt and not mgmt.migration_004_ready %}
+        <div class="alert alert-warning rounded-4 border-warning-subtle shadow-sm p-4 mb-4">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-database-up fs-3 text-warning-emphasis"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Migração Multi-Espécie (004) Pendente no Supabase</h5>
+                    <p class="small mb-2">
+                        Para registrar rotinas de casqueamento, ferrageamento, tosquia, Famacha e pesagem, execute o script SQL abaixo no seu projeto Supabase:
+                    </p>
+                    <code class="d-inline-block bg-white border rounded-2 px-2 py-1 small">database/migrations/004_multi_species_management.sql</code>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- KPIs de Manejo -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="kpi-mini-card d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted fw-semibold">Retornos Atrasados</div>
+                        <div class="kpi-mini-value mt-1 {% if mgmt.overdue_alerts %}text-danger{% endif %}">{{ mgmt.overdue_alerts | length }}</div>
+                        <div class="small text-muted">Cascos, ferraduras, tosquia ou pesagem</div>
+                    </div>
+                    <span class="stat-icon stat-icon-pink"><i class="bi bi-exclamation-octagon"></i></span>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="kpi-mini-card d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted fw-semibold">Programados (Próx. 30 dias)</div>
+                        <div class="kpi-mini-value mt-1">{{ mgmt.upcoming_alerts | length }}</div>
+                        <div class="small text-muted">Retornos agendados no período</div>
+                    </div>
+                    <span class="stat-icon stat-icon-mustard"><i class="bi bi-calendar2-event"></i></span>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="kpi-mini-card d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted fw-semibold">Registros Recentes</div>
+                        <div class="kpi-mini-value mt-1 text-fern">{{ mgmt.recent_records | length }}</div>
+                        <div class="small text-muted">Últimos manejos lançados</div>
+                    </div>
+                    <span class="stat-icon stat-icon-green"><i class="bi bi-tools"></i></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Coluna Esquerda: Alertas de Retorno (Atrasados + Próximos 30 dias) -->
+            <div class="col-lg-5">
+                <div class="card-agro p-4 h-100">
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-bell text-brand me-1"></i> Retornos Pendentes &amp; Próximos
+                    </h5>
+
+                    {% set combined_alerts = mgmt.overdue_alerts + mgmt.upcoming_alerts %}
+                    {% if combined_alerts %}
+                        <div class="d-grid gap-2">
+                            {% for al in combined_alerts %}
+                                <div class="p-3 rounded-3 border bg-light-subtle">
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                        <span class="{{ al.routine_badge_class }}">
+                                            <i class="bi {{ al.routine_icon }} me-1"></i>{{ al.routine_short_label }}
+                                        </span>
+                                        <span class="{{ al.due_badge_class }}">{{ al.due_status_label }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <div>
+                                            <a href="{{ url_for('animal_detail', token=al.animal.qr_code_token) }}#rotinas-manejo" class="fw-bold text-dark text-decoration-none">
+                                                #{{ al.animal.ear_tag }}{% if al.animal.name %} &mdash; {{ al.animal.name }}{% endif %}
+                                            </a>
+                                            <div class="small text-muted">
+                                                {{ al.animal.species_emoji }} {{ al.animal.species_label }}
+                                                {% if al.animal.housing_display %} &bull; {{ al.animal.housing_display }}{% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="text-end small">
+                                            <div class="text-muted">Previsto:</div>
+                                            <div class="fw-semibold">{{ al.next_due_date | date_br }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted small">
+                            <i class="bi bi-check2-circle fs-2 d-block mb-2 text-success"></i>
+                            Nenhum retorno de manejo atrasado ou pendente nos próximos 30 dias.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Histórico Recente de Manejos -->
+            <div class="col-lg-7">
+                <div class="card-agro p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">
+                            <i class="bi bi-clock-history text-fern me-1"></i> Últimos Manejos Realizados
+                        </h5>
+                    </div>
+
+                    {% if mgmt.recent_records %}
+                        <div class="table-responsive">
+                            <table class="table table-agro align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Animal</th>
+                                        <th>Rotina</th>
+                                        <th>Indicadores / Detalhes</th>
+                                        <th>Realizado / Retorno</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for r in mgmt.recent_records %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('animal_detail', token=r.animal.qr_code_token) }}#rotinas-manejo" class="text-decoration-none">
+                                                    <span class="badge-ear-tag">#{{ r.animal.ear_tag }}</span>
+                                                </a>
+                                                <div class="small text-muted mt-1">
+                                                    {{ r.animal.species_emoji }} {{ r.animal.name or r.animal.breed }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="{{ r.routine_badge_class }}">
+                                                    <i class="bi {{ r.routine_icon }} me-1"></i>{{ r.routine_short_label }}
+                                                </span>
+                                                {% if r.specialist_or_responsible %}
+                                                    <div class="small text-muted mt-1">{{ r.specialist_or_responsible }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small">
+                                                {% if r.weight_kg is not none %}<div>Peso: <strong>{{ r.weight_kg | weight_br }}</strong></div>{% endif %}
+                                                {% if r.fleece_weight_kg is not none %}<div>Lã/Velo: <strong>{{ r.fleece_weight_kg | weight_br }}</strong></div>{% endif %}
+                                                {% if r.famacha_score is not none %}<div>Famacha: <strong>Grau {{ r.famacha_score }}/5</strong></div>{% endif %}
+                                                {% if r.hoof_condition %}<div>{{ r.hoof_condition }}</div>{% endif %}
+                                                {% if r.notes %}<div class="text-muted">{{ r.notes }}</div>{% endif %}
+                                                {% if r.weight_kg is none and r.fleece_weight_kg is none and r.famacha_score is none and not r.hoof_condition and not r.notes %}
+                                                    <span class="text-muted">Rotina concluída</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small">
+                                                <div class="fw-semibold">{{ r.performed_at | date_br }}</div>
+                                                {% if r.next_due_date %}
+                                                    <div class="text-muted">Próx.: {{ r.next_due_date | date_br }}</div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted small">
+                            <i class="bi bi-tools fs-2 d-block mb-2 opacity-50"></i>
+                            Nenhum manejo registrado ainda para o filtro selecionado.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Global: Registrar Manejo -->
+        <div class="modal fade no-print" id="registerManagementGlobalModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <form method="POST" action="{{ url_for('sanitary.add_management_record') }}">
+                        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                        <div class="modal-header border-bottom pb-2">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-tools text-fern me-1"></i> Registrar Rotina de Manejo no Plantel
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Animal <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="animal_id" id="mgmtGlobalAnimalSelect" required>
+                                        <option value="">Selecione o animal...</option>
+                                        {% for a in animals %}
+                                            <option value="{{ a.id }}" data-species="{{ a.species }}">
+                                                {{ a.species_emoji }} #{{ a.ear_tag }}{% if a.name %} — {{ a.name }}{% endif %} ({{ a.species_label }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tipo de Manejo <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="routine_type" id="mgmtGlobalRoutineSelect" required>
+                                        {% for rslug, rmeta in management_routines.items() %}
+                                            <option value="{{ rslug }}" data-allowed-species="{{ rmeta.species | join(',') }}">
+                                                {{ rmeta.label }} ({{ rmeta.default_interval_days }}d)
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Data Realizada <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="performed_at" value="{{ today_iso }}" max="{{ today_iso }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Próximo Retorno <span class="text-muted fw-normal">(opcional)</span></label>
+                                    <input type="date" class="form-control" name="next_due_date">
+                                    <div class="form-check mt-1">
+                                        <input class="form-check-input" type="checkbox" id="autoSuggestGlobal" name="auto_suggest_due" value="1" checked>
+                                        <label class="form-check-label small text-muted" for="autoSuggestGlobal">
+                                            Calcular retorno automático pelo intervalo padrão se em branco
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Peso Corporal (kg)</label>
+                                    <input type="number" step="0.01" min="0" max="3000" class="form-control" name="weight_kg" placeholder="Ex.: 410.0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Peso Velo/Lã (kg - Ovinos)</label>
+                                    <input type="number" step="0.01" min="0" max="50" class="form-control" name="fleece_weight_kg" placeholder="Ex.: 3.5">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Grau Famacha (Ovinos)</label>
+                                    <select class="form-select" name="famacha_score">
+                                        <option value="">Não avaliado</option>
+                                        <option value="1">1 — Ótimo</option>
+                                        <option value="2">2 — Bom</option>
+                                        <option value="3">3 — Limítrofe</option>
+                                        <option value="4">4 — Tratar</option>
+                                        <option value="5">5 — Anêmico / Urgente</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Condição de Cascos / Ferraduras / Dentes</label>
+                                    <input type="text" class="form-control" name="hoof_condition" placeholder="Ex.: Cascos aparados sem lesão">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Profissional / Ferrador / Tosquiador / Resp.</label>
+                                    <input type="text" class="form-control" name="specialist_or_responsible" value="{{ current_operator.name }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Observações</label>
+                                    <textarea class="form-control" name="notes" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0">
+                            <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-agro">Salvar Registro de Manejo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const animSel = document.getElementById("mgmtGlobalAnimalSelect");
+    const routSel = document.getElementById("mgmtGlobalRoutineSelect");
+    if (!animSel || !routSel) return;
+
+    const filterRoutinesBySpecies = () => {
+        const opt = animSel.options[animSel.selectedIndex];
+        const sp = opt ? opt.getAttribute("data-species") : "";
+        let firstVisible = null;
+        Array.from(routSel.options).forEach((ropt) => {
+            const allowed = (ropt.getAttribute("data-allowed-species") || "").split(",");
+            const visible = !sp || allowed.includes(sp);
+            ropt.hidden = !visible;
+            if (visible && !firstVisible) firstVisible = ropt.value;
+            if (!visible && ropt.selected) routSel.value = "";
+        });
+        if (!routSel.value && firstVisible) routSel.value = firstVisible;
+    };
+
+    animSel.addEventListener("change", filterRoutinesBySpecies);
+});
+</script>
+{% endblock %}

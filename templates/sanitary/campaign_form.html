@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Campanha de Vacinação — Animora{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1 class="h3 fw-bold mb-1">Nova Campanha de Vacinação</h1>
+    <p class="text-muted small mb-0">
+        Selecione os animais por lote ou manualmente. O sistema criará um agendamento independente para cada animal.
+    </p>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+<div class="card-agro p-4 p-md-5">
+    {% if not active_vaccines %}
+        <div class="alert alert-warning rounded-3">
+            Cadastre ao menos uma vacina ativa antes de criar uma campanha.
+            <a href="{{ url_for('sanitary.vaccines_view') }}" class="fw-bold text-dark ms-1">Ir para Catálogo de Vacinas &rarr;</a>
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('sanitary.campaign_new') }}" id="campaignCreateForm">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <h6 class="fw-bold text-uppercase small text-muted mb-3">1. Dados da Campanha</h6>
+
+                <div class="mb-3">
+                    <label class="form-label">Nome da Campanha <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="name" value="{{ form_data.name }}" placeholder="Ex.: Vacinação Semestral Matrizes" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Propriedade <span class="text-danger">*</span></label>
+                    <select class="form-select" name="property_id" id="camp_property_id" required>
+                        {% for p in ctx.properties %}
+                            <option value="{{ p.id }}" {% if form_data.property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Item do Catálogo Preventivo <span class="text-danger">*</span></label>
+                    <select class="form-select" name="vaccine_id" id="camp_vaccine_id" required>
+                        <option value="">Selecione vacina, vermífugo ou exame...</option>
+                        {% for v in active_vaccines %}
+                            <option value="{{ v.id }}" data-target-species="{{ v.target_species or 'todas' }}" {% if form_data.vaccine_id == v.id %}selected{% endif %}>
+                                [{{ v.item_type_label or 'Vacina' }}] {{ v.commercial_name }} — {{ v.target_species_label or 'Todas' }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Data Prevista <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" name="scheduled_date" value="{{ form_data.scheduled_date }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" name="description" rows="2" placeholder="Objetivo operacional da campanha...">{{ form_data.description }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações de Manejo</label>
+                    <textarea class="form-control" name="notes" rows="2" placeholder="Horário de curral, equipe responsável...">{{ form_data.notes }}</textarea>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-uppercase small text-muted mb-0">2. Seleção de Animais</h6>
+                    <span id="selectedAnimalsCountBadge" class="badge bg-success-subtle text-success-emphasis px-3 py-2">0 selecionado(s)</span>
+                </div>
+
+                <!-- Alternador de Modalidade -->
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <label class="p-3 border rounded-3 d-flex align-items-center gap-2 bg-light-subtle w-100">
+                            <input class="form-check-input mt-0" type="radio" name="selection_mode" value="lote" {% if form_data.selection_mode != 'manual' %}checked{% endif %}>
+                            <div>
+                                <div class="fw-bold small">Seleção por Lote</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Busca animais ativos do lote</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="p-3 border rounded-3 d-flex align-items-center gap-2 bg-light-subtle w-100">
+                            <input class="form-check-input mt-0" type="radio" name="selection_mode" value="manual" {% if form_data.selection_mode == 'manual' %}checked{% endif %}>
+                            <div>
+                                <div class="fw-bold small">Seleção Manual</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Pesquisar por brinco ou nome</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bloco Lote -->
+                <div id="lotSelectionBlock" class="mb-3">
+                    <label class="form-label">Lote da Propriedade <span class="text-danger">*</span></label>
+                    <select class="form-select" name="lot_id" id="camp_lot_id">
+                        <option value="">Selecione um lote...</option>
+                    </select>
+                </div>
+
+                <!-- Bloco Busca Manual -->
+                <div id="manualSearchBlock" class="mb-3 d-none">
+                    <div class="d-flex gap-2">
+                        <input type="search" id="manualAnimalSearch" class="form-control" placeholder="Pesquisar animal pelo número do brinco ou nome...">
+                        <button type="button" id="selectAllCampaignAnimalsBtn" class="btn btn-outline-agro flex-shrink-0">
+                            Marcar visíveis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista Dinâmica dos Animais -->
+                <div id="campaignAnimalsList" class="d-grid gap-2 p-2 border rounded-3 bg-light" style="max-height: 390px; overflow-y: auto;">
+                    <div class="text-muted small py-3 text-center">Carregando animais...</div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 opacity-25">
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{{ url_for('sanitary.campaigns_list') }}" class="btn btn-outline-secondary rounded-3 px-4">Cancelar</a>
+            <button type="submit" class="btn btn-agro px-4" {% if not active_vaccines %}disabled{% endif %}>
+                <i class="bi bi-check2-circle me-1"></i> Criar Campanha e Gerar Agendamentos
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

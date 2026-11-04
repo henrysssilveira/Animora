@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Estoque &amp; Controle de Etiquetas QR — Animora{% endblock %}
+
+{% block content %}
+{% include "labels/_subnav.html" %}
+
+{% if is_admin_authenticated %}
+<!-- Seção 1 (Exclusiva Admin): Histórico de Conjuntos Gerados (Reimpressão & PDF) -->
+<section class="card-agro p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-collection text-brand me-1"></i> Histórico de Conjuntos Gerados (Admin)
+            </h5>
+            <small class="text-muted">Reimprima ou exporte novamente em PDF qualquer conjunto já gerado mantendo os mesmos QR Codes</small>
+        </div>
+        <a href="{{ url_for('labels.generator') }}" class="btn btn-sm btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> Criar Novo Lote QR
+        </a>
+    </div>
+
+    {% if batches %}
+        <div class="table-responsive">
+            <table class="table table-agro align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Conjunto</th>
+                        <th>Intervalo</th>
+                        <th>Formato Configurado</th>
+                        <th>Disponibilidade</th>
+                        <th>Gerado em</th>
+                        <th class="text-end">Impressão &amp; PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in batches %}
+                        {% set lcfg = b.layout_config or {} %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ b.batch_name }}</div>
+                                <div class="small text-muted">
+                                    {% if b.properties %}{{ b.properties.name }}{% else %}Organização Geral{% endif %}
+                                    {% if b.custom_text %} &bull; "{{ b.custom_text }}"{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border fw-semibold">
+                                    {{ "%s%0*d"|format(b.prefix, b.padding_digits, b.start_number) }} &rarr; {{ "%s%0*d"|format(b.prefix, b.padding_digits, b.end_number) }}
+                                </span>
+                                <div class="small text-muted mt-1">{{ b.quantity }} etiqueta(s)</div>
+                            </td>
+                            <td class="small">
+                                <div><strong>{{ lcfg.get('label_width_mm', 63.5) }} × {{ lcfg.get('label_height_mm', 33.9) }} mm</strong></div>
+                                <div class="text-muted">{{ lcfg.get('columns', 3) }}×{{ lcfg.get('rows', 8) }} na folha {{ lcfg.get('page_width_mm', 210) }}×{{ lcfg.get('page_height_mm', 297) }} mm</div>
+                            </td>
+                            <td class="small">
+                                <span class="badge-status-applied me-1">{{ b.available_count }} disp.</span>
+                                {% if b.activated_count %}
+                                    <span class="badge-age-newborn me-1">{{ b.activated_count }} ativ.</span>
+                                {% endif %}
+                                {% if b.assigned_count %}
+                                    <span class="badge-status-upcoming me-1">{{ b.assigned_count }} res.</span>
+                                {% endif %}
+                                {% if b.retired_count %}
+                                    <span class="badge-status-cancelled">{{ b.retired_count }} inat.</span>
+                                {% endif %}
+                            </td>
+                            <td class="small">{{ b.created_at | datetime_br }}</td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a href="{{ url_for('labels.batch_detail', batch_id=b.id) }}" class="btn btn-sm btn-outline-agro" title="Abrir pré-visualização e editar layout">
+                                        <i class="bi bi-eye"></i> Ver / Editar
+                                    </a>
+                                    <a href="{{ url_for('labels.export_pdf', batch_id=b.id) }}" class="btn btn-sm btn-agro" title="Baixar PDF em milímetros">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+                                    <a href="{{ url_for('labels.print_sheet', batch_id=b.id) }}" target="_blank" class="btn btn-sm btn-olive" title="Imprimir folha diretamente">
+                                        <i class="bi bi-printer"></i> Imprimir
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-4 text-muted small">
+            Nenhum conjunto de etiquetas em lote gerado ainda.
+        </div>
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Seção 2 (Property e Admin): Estoque & Atribuição Individual das Etiquetas (`tag_units`) -->
+<section class="card-agro p-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-upc-scan text-brand me-1"></i> Etiquetas QR &amp; Atribuição de Animais
+            </h5>
+            <small class="text-muted">Selecione etiquetas disponíveis para atribuir animais ou reservar para manejo de campo</small>
+        </div>
+
+        <form method="GET" action="{{ url_for('labels.history') }}" class="d-flex flex-wrap gap-2">
+            <input
+                type="text"
+                name="q"
+                class="form-control form-control-sm"
+                style="width: 190px;"
+                placeholder="Buscar ex.: AN-00001"
+                value="{{ search_q }}"
+            >
+            <select name="status" class="form-select form-select-sm" style="width: 195px;">
+                <option value="">Todos os status</option>
+                {% for st_key, meta in status_meta.items() %}
+                    <option value="{{ st_key }}" {% if status_filter == st_key %}selected{% endif %}>
+                        {{ meta.label }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-agro">
+                <i class="bi bi-funnel me-1"></i> Filtrar
+            </button>
+            {% if status_filter or search_q %}
+                <a href="{{ url_for('labels.history') }}" class="btn btn-sm btn-outline-secondary rounded-3">Limpar</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if units %}
+        <div class="table-responsive">
+            <table class="table table-agro align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Numeração</th>
+                        <th>Conjunto</th>
+                        <th>Token QR Seguro</th>
+                        <th>Status Atual</th>
+                        <th>Atribuição de Animal</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in units %}
+                        <tr>
+                            <td>
+                                <span class="badge-ear-tag">{{ u.tag_number }}</span>
+                            </td>
+                            <td class="small">
+                                {% if u.tag_batches %}
+                                    {% if is_admin_authenticated %}
+                                        <a href="{{ url_for('labels.batch_detail', batch_id=u.tag_batches.id) }}" class="text-decoration-none text-dark fw-medium">
+                                            {{ u.tag_batches.batch_name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-dark fw-medium">{{ u.tag_batches.batch_name }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Avulsa</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small text-muted">{{ u.qr_token[:8] }}&hellip;{{ u.qr_token[-6:] }}</code>
+                            </td>
+                            <td>
+                                <span class="{{ u.status_badge_class }}">{{ u.status_label }}</span>
+                            </td>
+                            <td class="small">
+                                {% if u.animals %}
+                                    <a href="{{ url_for('animal_detail', token=u.animals.qr_code_token) }}" class="fw-semibold text-fern text-decoration-none">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>#{{ u.animals.ear_tag }}{% if u.animals.name %} — {{ u.animals.name }}{% endif %}
+                                    </a>
+                                {% elif u.status in ('available', 'assigned') %}
+                                    <a href="{{ url_for('animal_new', tag_unit_id=u.id) }}" class="btn btn-sm btn-agro py-1 px-2">
+                                        <i class="bi bi-plus-circle me-1"></i> Atribuir Animal
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Etiqueta baixada</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    {% if is_admin_authenticated %}
+                                        <a href="{{ url_for('labels.download_unit_qr', unit_id=u.id) }}" class="btn btn-sm btn-outline-secondary rounded-3" title="Baixar imagem PNG do QR Code">
+                                            <i class="bi bi-qr-code"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if u.status != 'activated' and (is_admin_authenticated or u.status != 'retired') %}
+                                        <form method="POST" action="{{ url_for('labels.change_unit_status', unit_id=u.id) }}" class="d-inline-flex gap-1">
+                                            <input type="hidden" name="current_filter" value="{{ status_filter }}">
+                                            <select name="status" class="form-select form-select-sm py-1" style="width: 145px;" onchange="this.form.submit()">
+                                                <option value="available" {% if u.status == 'available' %}selected{% endif %}>Disponível</option>
+                                                <option value="assigned" {% if u.status == 'assigned' %}selected{% endif %}>Reservada</option>
+                                                {% if is_admin_authenticated %}
+                                                    <option value="retired" {% if u.status == 'retired' %}selected{% endif %}>Inativada</option>
+                                                {% endif %}
+                                            </select>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-4 text-muted small">
+            Nenhuma etiqueta encontrada para os filtros selecionados.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

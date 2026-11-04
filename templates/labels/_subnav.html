@@ -1,0 +1,46 @@
+<!-- Sub-navegação do Módulo de Etiquetas QR -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 no-print">
+    <div>
+        <h1 class="h3 fw-bold mb-1">
+            <i class="bi bi-qr-code text-brand me-1"></i>
+            {% if is_admin_authenticated %}
+                Criação &amp; Gestão de Etiquetas QR Code
+            {% else %}
+                Estoque &amp; Atribuição de Etiquetas QR
+            {% endif %}
+        </h1>
+        <p class="text-muted small mb-0">
+            {% if is_admin_authenticated %}
+                Geração sequencial exclusiva Admin, configurador em milímetros, exportação PDF e controle de atribuição.
+            {% else %}
+                Consulte etiquetas QR criadas pelo Admin, reserve numerações e atribua animais às etiquetas disponíveis.
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="sanitary-subnav">
+        {% if is_admin_authenticated %}
+            <a href="{{ url_for('labels.generator') }}" class="sanitary-subnav-link {% if request.endpoint == 'labels.generator' %}active{% endif %}">
+                <i class="bi bi-sliders"></i> Criar QR Codes
+            </a>
+        {% endif %}
+        <a href="{{ url_for('labels.history') }}" class="sanitary-subnav-link {% if request.endpoint == 'labels.history' %}active{% endif %}">
+            <i class="bi bi-tags"></i> Estoque &amp; Atribuição
+        </a>
+    </div>
+</div>
+
+{% if tag_migration_error %}
+<div class="alert alert-warning rounded-4 shadow-sm border-warning-subtle d-flex align-items-start gap-3 mb-4 no-print" role="alert">
+    <i class="bi bi-database-gear fs-3 text-warning-emphasis mt-1"></i>
+    <div>
+        <h6 class="fw-bold mb-1">Configuração Inicial das Tabelas de Etiquetas no Supabase</h6>
+        <p class="small mb-2">{{ tag_migration_error }}</p>
+        <div class="small text-muted">
+            Abra o <strong>SQL Editor</strong> do seu projeto Supabase e execute o script idempotente
+            <code>database/migrations/003_tag_batches_and_units.sql</code> para habilitar o armazenamento de
+            <code>tag_units</code> e o histórico de lotes <code>tag_batches</code>.
+        </div>
+    </div>
+</div>
+{% endif %}

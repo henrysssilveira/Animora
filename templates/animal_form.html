@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block title %}{% if can_create_adhoc_qr %}Cadastrar Animal{% else %}Atribuir Animal{% endif %} — Animora{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% if can_create_adhoc_qr %}Cadastrar Animal{% else %}Atribuir Animal a Etiqueta QR{% endif %}
+            </li>
+        </ol>
+    </nav>
+    <h1 class="h3 fw-bold mb-1">
+        {% if can_create_adhoc_qr %}
+            Cadastro &amp; Atribuição Multi-Espécie
+        {% else %}
+            Atribuição de Animal a Etiqueta / Placa QR
+        {% endif %}
+    </h1>
+    <p class="text-muted mb-0">
+        Registre <strong>Bovinos, Equinos ou Ovinos</strong> vinculando a etiqueta QR oficial (brinco, colar ou placa de baia/cocho), definindo alojamento e gerando agendamentos preventivos compatíveis com a espécie.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-agro p-4 p-md-5">
+            {% if not can_create_adhoc_qr and not available_tags %}
+                <div class="alert alert-warning rounded-4 d-flex align-items-start gap-3 mb-4">
+                    <i class="bi bi-qr-code fs-3 text-warning-emphasis mt-1"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Nenhuma etiqueta QR disponível em estoque</h6>
+                        <p class="small mb-2">
+                            A criação de novos QR Codes é exclusiva do nível <strong>Admin</strong>. Solicite ao administrador a geração de um novo lote em <code>/etiquetas</code> para atribuir novos animais.
+                        </p>
+                        <a href="{{ url_for('operator_login', level='admin', next=url_for('labels.generator')) }}" class="btn btn-sm btn-mustard">
+                            <i class="bi bi-key-fill me-1"></i> Entrar como Admin para Criar QR Codes
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('animal_new') }}" novalidate>
+                <!-- Seletor Visual de Espécie -->
+                <h6 class="fw-bold text-uppercase small text-muted mb-2">1. Espécie do Animal</h6>
+                <input type="hidden" name="species" id="speciesInput" value="{{ form_data.species or 'bovino' }}">
+                <div class="row g-2 mb-4">
+                    {% for sp_slug, sp in species_meta.items() %}
+                        <div class="col-4">
+                            <div
+                                class="species-selector-card text-center {% if (form_data.species or 'bovino') == sp_slug %}active{% endif %}"
+                                data-species-card="{{ sp_slug }}"
+                            >
+                                <div class="fs-2 lh-1 mb-1">{{ sp.emoji }}</div>
+                                <div class="fw-bold small">{{ sp.label }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="fw-bold text-uppercase small text-muted mb-3">2. Etiqueta QR &amp; Identificação Cadastral</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 border bg-light-subtle">
+                            <label for="tag_unit_id" class="form-label d-flex justify-content-between align-items-center mb-1">
+                                <span>
+                                    <i class="bi bi-qr-code-scan text-brand me-1"></i>
+                                    Etiqueta / Placa QR Disponível
+                                    {% if not can_create_adhoc_qr %}
+                                        <span class="text-danger">*</span>
+                                    {% else %}
+                                        <span class="text-muted fw-normal">(opcional para Admin)</span>
+                                    {% endif %}
+                                </span>
+                                {% if can_create_adhoc_qr %}
+                                    <a href="{{ url_for('labels.generator') }}" class="small text-brand text-decoration-none fw-semibold">+ Criar novas etiquetas QR</a>
+                                {% else %}
+                                    <a href="{{ url_for('labels.history', status='available') }}" class="small text-fern text-decoration-none fw-semibold">Ver estoque disponível</a>
+                                {% endif %}
+                            </label>
+                            <select class="form-select" id="tag_unit_id" name="tag_unit_id" {% if not can_create_adhoc_qr %}required{% endif %}>
+                                {% if can_create_adhoc_qr %}
+                                    <option value="" data-tag-number="">Gerar novo QR Code avulso (exclusivo Admin)</option>
+                                {% else %}
+                                    <option value="" data-tag-number="" {% if not form_data.tag_unit_id %}selected{% endif %} disabled>
+                                        {% if available_tags %}Selecione uma etiqueta QR disponível...{% else %}Sem etiquetas disponíveis para atribuição{% endif %}
+                                    </option>
+                                {% endif %}
+                                {% for tag in available_tags %}
+                                    <option
+                                        value="{{ tag.id }}"
+                                        data-tag-number="{{ tag.tag_number }}"
+                                        {% if form_data.tag_unit_id == tag.id %}selected{% endif %}
+                                    >
+                                        {{ tag.tag_number }} — {% if tag.status == 'assigned' %}Reservada{% else %}Disponível{% endif %}{% if tag.custom_text %} ({{ tag.custom_text }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text" id="speciesTagHint">
+                                Brinco auricular, colar ou placa de baia/cocho com QR Code oficial Animora.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Código da Etiqueta / Placa / Brinco -->
+                    <div class="col-md-6">
+                        <label for="ear_tag" class="form-label">
+                            Código da Etiqueta / Identificador <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control {% if not can_create_adhoc_qr %}bg-light{% endif %}"
+                            id="ear_tag"
+                            name="ear_tag"
+                            maxlength="100"
+                            placeholder="Ex.: AN-00001"
+                            value="{{ form_data.ear_tag }}"
+                            {% if not can_create_adhoc_qr %}readonly{% endif %}
+                            required
+                        >
+                        <div class="form-text">
+                            {% if can_create_adhoc_qr %}
+                                Preenchido ao escolher uma etiqueta do lote, ou digite manualmente.
+                            {% else %}
+                                Preenchido automaticamente pela etiqueta QR selecionada.
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Nome -->
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">
+                            Nome do Animal <span class="text-muted fw-normal">(exibido no QR público e placa de baia)</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="name"
+                            name="name"
+                            maxlength="150"
+                            placeholder="Ex.: Trovão, Estrela, Baronesa..."
+                            value="{{ form_data.name }}"
+                        >
+                    </div>
+
+                    <!-- Sexo -->
+                    <div class="col-md-4">
+                        <label for="sex" class="form-label">
+                            Sexo <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="sex" name="sex" required>
+                            <option value="" disabled {% if not form_data.sex %}selected{% endif %}>Selecione...</option>
+                            <option value="Macho" {% if form_data.sex == 'Macho' %}selected{% endif %}>Macho</option>
+                            <option value="Fêmea" {% if form_data.sex == 'Fêmea' %}selected{% endif %}>Fêmea</option>
+                        </select>
+                    </div>
+
+                    <!-- Raça -->
+                    <div class="col-md-4">
+                        <label for="breed" class="form-label">
+                            Raça <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="breed"
+                            name="breed"
+                            list="commonBreeds"
+                            maxlength="100"
+                            placeholder="Selecione ou digite..."
+                            value="{{ form_data.breed }}"
+                            required
+                        >
+                        <datalist id="commonBreeds"></datalist>
+                    </div>
+
+                    <!-- Pelagem -->
+                    <div class="col-md-4">
+                        <label for="coat_color" class="form-label">
+                            Pelagem <span class="text-muted fw-normal">(visível na placa/QR)</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="coat_color"
+                            name="coat_color"
+                            list="commonCoats"
+                            maxlength="80"
+                            placeholder="Ex.: Tordilho, Alazão, Branca..."
+                            value="{{ form_data.coat_color }}"
+                        >
+                        <datalist id="commonCoats"></datalist>
+                    </div>
+
+                    <!-- Data de Nascimento + Prévia Dinâmica de Classificação Neutra -->
+                    <div class="col-md-6">
+                        <label for="birth_date" class="form-label d-flex justify-content-between align-items-center">
+                            <span>Data de Nascimento <span class="text-danger">*</span></span>
+                            <span id="liveAgePreview" class="badge bg-light text-dark border fw-semibold"></span>
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="birth_date"
+                            name="birth_date"
+                            max="{{ max_date }}"
+                            value="{{ form_data.birth_date }}"
+                            required
+                        >
+                    </div>
+
+                    <!-- Peso Inicial -->
+                    <div class="col-md-6">
+                        <label for="initial_weight" class="form-label">
+                            Peso Inicial / Atual (kg) <span class="text-muted fw-normal">(opcional)</span>
+                        </label>
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="3000"
+                                class="form-control"
+                                id="initial_weight"
+                                name="initial_weight"
+                                placeholder="Ex.: 420.00"
+                                value="{{ form_data.initial_weight }}"
+                            >
+                            <span class="input-group-text bg-light fw-semibold">kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Condição Reprodutiva -->
+                    <div class="col-md-6">
+                        <label for="reproductive_status" class="form-label">Condição Reprodutiva <span class="text-muted fw-normal">(interno)</span></label>
+                        <select class="form-select" id="reproductive_status" name="reproductive_status">
+                            {% for k, lbl in reproductive_statuses.items() %}
+                                <option value="{{ k }}" {% if form_data.reproductive_status == k %}selected{% endif %}>{{ lbl }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Microchip / Registro Genealógico -->
+                    <div class="col-md-6">
+                        <label for="secondary_id" class="form-label">Microchip / Registro / SISBOV <span class="text-muted fw-normal">(interno)</span></label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="secondary_id"
+                            name="secondary_id"
+                            maxlength="100"
+                            placeholder="Ex.: Chip 981000..., ABQM / ABCCMM / ARCO..."
+                            value="{{ form_data.secondary_id }}"
+                        >
+                    </div>
+                </div>
+
+                <!-- Seção de Alojamento / Baia / Cocho -->
+                <hr class="my-4 text-muted opacity-25">
+                <h6 class="fw-bold text-uppercase small text-muted mb-3">
+                    3. Alojamento, Baia / Cocho &amp; Localização Física
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="accommodation_type" class="form-label">Tipo de Alojamento</label>
+                        <select class="form-select" id="accommodation_type" name="accommodation_type">
+                            <option value="">Não especificado</option>
+                            {% for acc_k, acc_lbl in accommodation_types.items() %}
+                                <option value="{{ acc_k }}" {% if form_data.accommodation_type == acc_k %}selected{% endif %}>{{ acc_lbl }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label for="accommodation_name" class="form-label">
+                            Identificação da Baia / Piquete / Aprisco <span class="text-muted fw-normal">(exibido no QR público)</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="accommodation_name"
+                            name="accommodation_name"
+                            maxlength="120"
+                            placeholder="Ex.: Baia 04 - Pavilhão Norte, Piquete Maternidade..."
+                            value="{{ form_data.accommodation_name }}"
+                        >
+                    </div>
+                </div>
+
+                {% if ctx and ctx.migration_ready %}
+                    <hr class="my-4 text-muted opacity-25">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-uppercase small text-muted mb-0">4. Origem, Propriedade e Situação Sanitária</h6>
+                        <a href="{{ url_for('sanitary.properties_lots_view') }}" class="small text-brand fw-semibold text-decoration-none">
+                            + Gerenciar propriedades/lotes
+                        </a>
+                    </div>
+
+                    <div id="adultOnboardingHint" class="alert alert-warning rounded-3 py-2 px-3 small d-none mb-3">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                        <strong>Animal com mais de 30 dias detectado:</strong> caso já estivesse na propriedade ou tenha sido adquirido sem histórico documental, selecione
+                        <em>"Histórico sanitário desconhecido"</em>, <em>"Em avaliação sanitária inicial"</em> ou <em>"Protocolo iniciado na data de inclusão"</em> para evitar atrasos retroativos indevidos.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="property_id" class="form-label">Propriedade <span class="text-danger">*</span></label>
+                            <select class="form-select" id="property_id" name="property_id" required>
+                                {% for prop in ctx.properties %}
+                                    <option value="{{ prop.id }}" {% if form_data.property_id == prop.id %}selected{% endif %}>
+                                        {{ prop.name }} ({{ property_focus_labels.get(prop.production_focus, prop.production_focus | title) }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="lot_id" class="form-label">Lote de Manejo <span class="text-muted fw-normal">(opcional)</span></label>
+                            <select class="form-select" id="lot_id" name="lot_id" data-filter-by-property="1">
+                                <option value="">Sem lote definido</option>
+                                {% for lot in ctx.lots %}
+                                    <option
+                                        value="{{ lot.id }}"
+                                        data-property-id="{{ lot.property_id }}"
+                                        data-target-species="{{ lot.target_species or 'todas' }}"
+                                        {% if form_data.lot_id == lot.id %}selected{% endif %}
+                                    >
+                                        {{ lot.name }}{% if lot.target_species and lot.target_species != 'todas' %} ({{ target_species_labels.get(lot.target_species, lot.target_species) }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="origin_type" class="form-label">De Onde o Animal Veio (Origem)</label>
+                            <select class="form-select" id="origin_type" name="origin_type">
+                                <option value="nascido_propriedade" {% if form_data.origin_type == 'nascido_propriedade' %}selected{% endif %}>Nascido na propriedade</option>
+                                <option value="pre_existente" {% if form_data.origin_type == 'pre_existente' %}selected{% endif %}>Plantel pré-existente na propriedade</option>
+                                <option value="adquirido_externo" {% if form_data.origin_type == 'adquirido_externo' %}selected{% endif %}>Adquirido externamente</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="sanitary_onboarding_mode" class="form-label">Acompanhamento Sanitário Inicial</label>
+                            <select class="form-select" id="sanitary_onboarding_mode" name="sanitary_onboarding_mode">
+                                {% for slug, label in onboarding_modes.items() %}
+                                    <option value="{{ slug }}" {% if form_data.sanitary_onboarding_mode == slug %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="inclusion_date" class="form-label">Data de Inclusão no Acompanhamento</label>
+                            <input
+                                type="date"
+                                class="form-control"
+                                id="inclusion_date"
+                                name="inclusion_date"
+                                max="{{ max_date }}"
+                                value="{{ form_data.inclusion_date }}"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="initial_evaluation_text" class="form-label">
+                                Avaliação Sanitária Inicial <span class="text-muted fw-normal">(opcional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="initial_evaluation_text"
+                                name="initial_evaluation_text"
+                                placeholder="Ex.: Hígido na entrada; apto ao protocolo da espécie."
+                                value="{{ form_data.initial_evaluation_text }}"
+                            >
+                        </div>
+                    </div>
+                {% endif %}
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <!-- Observações Internas -->
+                <div class="mb-3">
+                    <label for="notes" class="form-label">
+                        Observações Internas <span class="text-muted fw-normal">(opcional — restritas ao Property/Admin)</span>
+                    </label>
+                    <textarea
+                        class="form-control"
+                        id="notes"
+                        name="notes"
+                        rows="2"
+                        placeholder="Genealogia (pai/mãe), temperamento, histórico de lida/esporte ou observações de manejo..."
+                    >{{ form_data.notes }}</textarea>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end mt-4">
+                    <a href="{{ url_for('animals_list') }}" class="btn btn-outline-secondary rounded-3 px-4">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-agro px-4" {% if not can_create_adhoc_qr and not available_tags %}disabled{% endif %}>
+                        <i class="bi bi-check2-circle me-1"></i>
+                        {% if can_create_adhoc_qr %}Salvar &amp; Ativar Identificação{% else %}Atribuir Animal &amp; Gerar Agenda{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Painel Informativo Lateral -->
+    <div class="col-lg-4">
+        <div class="card-agro p-4 mb-3">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="stat-icon stat-icon-pink">
+                    <i class="bi bi-qr-code-scan"></i>
+                </span>
+                <h5 class="fw-bold mb-0">QR no Brinco ou na Baia</h5>
+            </div>
+            <ul class="list-unstyled small text-muted mb-0 d-grid gap-3">
+                <li class="d-flex gap-2">
+                    <span class="flex-shrink-0">🐄</span>
+                    <span><strong>Bovinos:</strong> etiqueta QR aplicada no brinco/botton auricular ou colar, vinculada a protocolos de corte/leite.</span>
+                </li>
+                <li class="d-flex gap-2">
+                    <span class="flex-shrink-0">🐎</span>
+                    <span><strong>Equinos:</strong> imprima a <strong>Placa de Baia / Cocho</strong> ou Ficha Cadastral logo após salvar para fixar na cocheira!</span>
+                </li>
+                <li class="d-flex gap-2">
+                    <span class="flex-shrink-0">🐑</span>
+                    <span><strong>Ovinos:</strong> brinco leve ou placa de aprisco, com suporte a tosquia, vermifugação/OPG e avaliação Famacha.</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-agro p-4">
+            <h6 class="fw-bold mb-2"><i class="bi bi-shield-lock text-fern me-1"></i> Privacidade no Cocho</h6>
+            <p class="small text-muted mb-0">
+                Quem escanear o QR Code sem login (<strong>Common</strong>) vê apenas Nome, Espécie, Pelagem, Origem e Baia.
+                O <strong>Plano de Cocho/Ração</strong>, <strong>Sanidade</strong> e <strong>Manejo</strong> ficam visíveis somente para a equipe autenticada (<strong>Property / Admin</strong>).
+            </p>
+        </div>
+    </div>
+</div>
+
+<script id="speciesFormMetaJson" type="application/json">{{ species_meta | tojson }}</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const metaEl = document.getElementById("speciesFormMetaJson");
+    if (!metaEl) return;
+    const speciesMap = JSON.parse(metaEl.textContent || "{}");
+    const speciesInput = document.getElementById("speciesInput");
+    const cards = document.querySelectorAll("[data-species-card]");
+    const breedsList = document.getElementById("commonBreeds");
+    const coatsList = document.getElementById("commonCoats");
+    const accTypeSelect = document.getElementById("accommodation_type");
+    const accNameInput = document.getElementById("accommodation_name");
+    const tagHint = document.getElementById("speciesTagHint");
+    const lotSelect = document.getElementById("lot_id");
+    const propSelect = document.getElementById("property_id");
+
+    const applySpeciesUI = (spSlug, updateDefaultAccommodation = false) => {
+        const meta = speciesMap[spSlug] || speciesMap["bovino"];
+        if (!meta) return;
+        speciesInput.value = spSlug;
+
+        cards.forEach((c) => {
+            c.classList.toggle("active", c.getAttribute("data-species-card") === spSlug);
+        });
+
+        if (breedsList) {
+            breedsList.innerHTML = (meta.common_breeds || []).map((b) => `<option value="${b}">`).join("");
+        }
+        if (coatsList) {
+            coatsList.innerHTML = (meta.common_coats || []).map((c) => `<option value="${c}">`).join("");
+        }
+        if (accNameInput && meta.accommodation_placeholder) {
+            accNameInput.placeholder = meta.accommodation_placeholder;
+        }
+        if (updateDefaultAccommodation && accTypeSelect && meta.default_accommodation) {
+            accTypeSelect.value = meta.default_accommodation;
+        }
+        if (tagHint && meta.tag_hint) {
+            tagHint.textContent = meta.tag_hint;
+        }
+
+        if (lotSelect) {
+            const propId = propSelect ? propSelect.value : "";
+            Array.from(lotSelect.options).forEach((opt) => {
+                if (!opt.value) return;
+                const optProp = opt.getAttribute("data-property-id");
+                const optSp = opt.getAttribute("data-target-species") || "todas";
+                const okProp = !propId || optProp === propId;
+                const okSp = optSp === "todas" || optSp === spSlug;
+                opt.hidden = !(okProp && okSp);
+                if (opt.hidden && opt.selected) lotSelect.value = "";
+            });
+        }
+    };
+
+    cards.forEach((card) => {
+        card.addEventListener("click", () => {
+            applySpeciesUI(card.getAttribute("data-species-card"), true);
+        });
+    });
+
+    applySpeciesUI(speciesInput.value || "bovino", false);
+});
+</script>
+{% endblock %}

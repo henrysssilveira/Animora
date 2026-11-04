@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ batch.batch_name }} — Impressão de Etiquetas QR | Animora{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho e Ações de Impressão / Exportação PDF -->
+<div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4 no-print">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('labels.generator') }}" class="text-decoration-none text-muted">Etiquetas QR</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('labels.history') }}" class="text-decoration-none text-muted">Histórico</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ batch.batch_name }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <h1 class="h3 fw-bold mb-0">{{ batch.batch_name }}</h1>
+            <span class="badge bg-success-subtle text-success-emphasis rounded-pill px-3 py-1">
+                {{ batch.units | length }} etiqueta(s) &bull; {{ batch.total_pages }} folha(s)
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Gerado em {{ batch.created_at | datetime_br }} por {{ batch.created_by or 'Admin Animora' }}
+            {% if batch.properties %} &bull; Propriedade: <strong>{{ batch.properties.name }}</strong>{% endif %}
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('labels.export_pdf', batch_id=batch.id) }}" class="btn btn-agro px-3 py-2">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Baixar PDF Pronto p/ Impressão
+        </a>
+        <a href="{{ url_for('labels.export_pdf', batch_id=batch.id, inline='1') }}" target="_blank" class="btn btn-outline-agro px-3 py-2">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Visualizar PDF
+        </a>
+        <a href="{{ url_for('labels.print_sheet', batch_id=batch.id) }}" target="_blank" class="btn btn-olive px-3 py-2">
+            <i class="bi bi-printer-fill me-1"></i> Imprimir em Lote
+        </a>
+        <a href="{{ url_for('labels.generator') }}" class="btn btn-outline-secondary rounded-3 px-3 py-2">
+            <i class="bi bi-plus-lg me-1"></i> Novo Lote
+        </a>
+    </div>
+</div>
+
+{% set units_json = [] %}
+{% for u in batch.units %}
+    {% set _ = units_json.append({
+        "tag_number": u.tag_number,
+        "qr_image_url": url_for('static', filename='qrcodes/' ~ u.qr_token ~ '.png')
+    }) %}
+{% endfor %}
+
+<script id="labelPresetsJson" type="application/json">{{ presets | tojson }}</script>
+<script id="pageFormatsJson" type="application/json">{{ page_formats | tojson }}</script>
+<script id="batchUnitsJson" type="application/json">{{ units_json | tojson }}</script>
+
+<div class="row g-4 mb-4 no-print">
+    <!-- Coluna Esquerda: Pré-visualização de Todas as Folhas com QR Codes Reais -->
+    <div class="col-lg-7">
+        <div class="card-agro p-4 h-100">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-grid-3x3-gap-fill text-success me-1"></i> Pré-visualização Real das Etiquetas Geradas
+                    </h5>
+                    <small class="text-muted">Todos os QR Codes abaixo são exclusivos e já estão gravados no Supabase</small>
+                </div>
+                <span id="sheetsCountSummary" class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                    {{ layout.labels_per_page }}/folha &bull; {{ batch.total_pages }} folha(s)
+                </span>
+            </div>
+
+            <div id="liveLayoutFitAlert" class="alert alert-success rounded-3 py-2 px-3 small mb-3"></div>
+
+            <div id="liveSheetsStage" class="label-sheet-preview-stage" style="max-height: 760px; overflow-y: auto;">
+                <!-- Folhas reais renderizadas em escala proporcional por static/js/labels.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Direita: Ajuste Fino de Layout para Reimpressão -->
+    <div class="col-lg-5">
+        <div class="card-agro p-4">
+            <div class="border-bottom pb-3 mb-3">
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-rulers text-success me-1"></i> Ajustar Layout para Reimpressão
+                </h5>
+                <small class="text-muted">
+                    Trocou o modelo de folha adesiva? Ajuste as medidas em milímetros e salve para reimprimir este mesmo conjunto sem duplicar etiquetas.
+                </small>
+            </div>
+
+            <form method="POST" action="{{ url_for('labels.save_layout', batch_id=batch.id) }}" id="labelConfiguratorForm">
+                {% set cfg = layout %}
+                {% set custom_text_val = batch.custom_text %}
+                {% include "labels/_layout_fields.html" %}
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-outline-agro py-2">
+                        <i class="bi bi-check2-circle me-1"></i> Salvar Ajustes de Layout deste Conjunto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela Individual de Etiquetas do Conjunto -->
+<section class="card-agro p-4 no-print">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-tags-fill text-success me-1"></i> Etiquetas Individuais deste Conjunto ({{ batch.units | length }})
+            </h5>
+            <small class="text-muted">Disponíveis para vínculo futuro no cadastro de bovinos, sem criar registros fantasma de animais</small>
+        </div>
+        <a href="{{ url_for('labels.history') }}" class="btn btn-sm btn-outline-secondary rounded-3">
+            Gerenciar no Controle Geral
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-agro align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>QR</th>
+                    <th>Numeração</th>
+                    <th>Token Seguro Exclusivo</th>
+                    <th>Status</th>
+                    <th>Animal Vinculado</th>
+                    <th class="text-end">Ações Individuais</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in batch.units %}
+                    <tr>
+                        <td style="width: 58px;">
+                            <img
+                                src="{{ url_for('static', filename='qrcodes/' ~ u.qr_token ~ '.png') }}"
+                                alt="QR {{ u.tag_number }}"
+                                width="44"
+                                height="44"
+                                class="border rounded-2 p-1 bg-white"
+                            >
+                        </td>
+                        <td>
+                            <span class="badge-ear-tag">{{ u.tag_number }}</span>
+                            {% if u.custom_text %}
+                                <div class="small text-muted mt-1">{{ u.custom_text }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code class="small text-muted" title="{{ u.public_url }}">{{ u.qr_token[:8] }}&hellip;{{ u.qr_token[-6:] }}</code>
+                        </td>
+                        <td>
+                            <span class="{{ u.status_badge_class }}">{{ u.status_label }}</span>
+                        </td>
+                        <td class="small">
+                            {% if u.animals %}
+                                <a href="{{ url_for('animal_detail', token=u.animals.qr_code_token) }}" class="fw-semibold text-success text-decoration-none">
+                                    #{{ u.animals.ear_tag }}{% if u.animals.name %} — {{ u.animals.name }}{% endif %}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Aguardando vínculo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{{ url_for('labels.download_unit_qr', unit_id=u.id) }}" class="btn btn-sm btn-outline-agro" title="Baixar PNG individual">
+                                    <i class="bi bi-download"></i> PNG
+                                </a>
+                                {% if u.status in ('available', 'assigned') %}
+                                    <a href="{{ url_for('animal_new', tag_unit_id=u.id) }}" class="btn btn-sm btn-agro" title="Cadastrar bovino usando esta etiqueta">
+                                        <i class="bi bi-link-45deg"></i> Vincular Bovino
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

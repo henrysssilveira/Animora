@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Carteira Sanitária do Plantel — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Carteira Sanitária &amp; Prontuário dos Animais</h1>
+        <p class="text-muted small mb-0">Filtre o plantel por espécie, faixa etária, propriedade ou histórico e abra o prontuário individual.</p>
+    </div>
+    <a href="{{ url_for('animal_new') }}" class="btn btn-sm btn-agro">
+        <i class="bi bi-plus-lg me-1"></i> Atribuir Animal
+    </a>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if not migration_error %}
+<form method="GET" action="{{ url_for('sanitary.health_cards_index') }}" class="card-agro p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Propriedade</label>
+            <select name="property_id" id="property_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for p in ctx.properties %}
+                    <option value="{{ p.id }}" {% if filters.property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Espécie</label>
+            <select name="species" class="form-select form-select-sm">
+                <option value="todas" {% if filters.species == 'todas' %}selected{% endif %}>Todas</option>
+                {% for sp_slug, sp_info in species_meta.items() %}
+                    <option value="{{ sp_slug }}" {% if filters.species == sp_slug %}selected{% endif %}>
+                        {{ sp_info.emoji }} {{ sp_info.plural }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Lote</label>
+            <select name="lot_id" id="lot_id" class="form-select form-select-sm" data-filter-by-property="1">
+                <option value="">Todos</option>
+                {% for l in ctx.lots %}
+                    <option value="{{ l.id }}" data-property-id="{{ l.property_id }}" {% if filters.lot_id == l.id %}selected{% endif %}>{{ l.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <label class="form-label small mb-1">Faixa Etária</label>
+            <select name="age_category" class="form-select form-select-sm">
+                {% for slug, label in age_categories.items() %}
+                    <option value="{{ slug }}" {% if filters.age_category == slug %}selected{% endif %}>{{ label.split(' (')[0] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-8 col-md-8 col-lg-2">
+            <label class="form-label small mb-1">Histórico Inicial</label>
+            <select name="onboarding_mode" class="form-select form-select-sm">
+                <option value="todos">Todos</option>
+                {% for slug, label in onboarding_modes.items() %}
+                    <option value="{{ slug }}" {% if filters.onboarding_mode == slug %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4 col-md-4 col-lg-1 d-grid">
+            <button type="submit" class="btn btn-sm btn-agro">Filtrar</button>
+        </div>
+    </div>
+</form>
+
+<div class="card-agro p-4">
+    <div class="row g-2 mb-3">
+        <div class="col-md-5">
+            <input type="search" id="herdSearchInput" class="form-control form-control-sm" placeholder="Busca rápida por etiqueta, nome, raça ou baia...">
+        </div>
+    </div>
+
+    {% if animals %}
+        <div class="table-responsive">
+            <table class="table table-agro align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Etiqueta / Animal</th>
+                        <th>Espécie &amp; Faixa Etária</th>
+                        <th>Propriedade / Alojamento</th>
+                        <th>Enquadramento Sanitário</th>
+                        <th class="text-end">Prontuário</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in animals %}
+                        <tr class="herd-item-row" data-search="{{ a.ear_tag }} {{ a.name or '' }} {{ a.breed }} {{ a.species_label }} {{ a.housing_display or '' }}">
+                            <td>
+                                <span class="badge-ear-tag">#{{ a.ear_tag }}</span>
+                                <span class="fw-semibold ms-1">{{ a.name or "" }}</span>
+                                <div class="small text-muted">{{ a.breed }} &bull; {{ a.sex }}</div>
+                            </td>
+                            <td>
+                                <span class="{{ a.species_badge_class }} me-1">{{ a.species_emoji }} {{ a.species_label }}</span>
+                                <span class="{{ a.age_badge_class }}">{{ a.age_category_name }}</span>
+                                <div class="small text-muted mt-1">{{ a.age_label }}</div>
+                            </td>
+                            <td class="small">
+                                <div class="fw-semibold">{{ a.property_name }}</div>
+                                <div class="text-muted">
+                                    {{ a.lot_name }}
+                                    {% if a.housing_display %} &bull; {{ a.housing_display }}{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if a.sanitary_onboarding_mode == 'historico_desconhecido' %}
+                                    <span class="badge-status-unknown">{{ a.onboarding_label }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">{{ a.onboarding_label }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a href="{{ url_for('animal_stall_card', token=a.qr_code_token) }}" class="btn btn-sm btn-outline-agro" title="Placa de Baia / Ficha QR">
+                                        <i class="bi bi-card-heading"></i>
+                                    </a>
+                                    <a href="{{ url_for('animal_detail', token=a.qr_code_token) }}#carteira-sanitaria" class="btn btn-sm btn-agro">
+                                        <i class="bi bi-journal-medical me-1"></i> Abrir Prontuário
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="emptySearchFeedback" class="text-center py-4 d-none">
+            <p class="text-muted small mb-0">Nenhum animal corresponde à busca.</p>
+        </div>
+    {% else %}
+        <p class="text-muted small text-center py-4 mb-0">Nenhum animal encontrado para os filtros aplicados.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

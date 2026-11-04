@@ -1,0 +1,165 @@
+<!-- Modal Reutilizável: Confirmar / Registrar Vacina, Vermífugo ou Exame Preventivo -->
+<div class="modal fade no-print" id="confirmVaccinationModal" tabindex="-1" aria-labelledby="confirmVaccinationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form method="POST" action="{{ url_for('sanitary.confirm_application') }}">
+                <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                <input type="hidden" name="schedule_id" value="">
+                <input type="hidden" name="animal_id" value="">
+                <input type="hidden" name="is_historical_record" value="false">
+
+                <div class="modal-header border-bottom pb-3">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1" id="confirmVaccinationModalLabel">
+                            <i class="bi bi-eyedropper text-success me-1"></i> Registro Preventivo (Vacina, Vermífugo ou Exame)
+                        </h5>
+                        <span id="applyModalAnimalBadge" class="badge-ear-tag">Animal</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <div class="modal-body py-3">
+                    <div id="applyModalHistoricalNotice" class="alert alert-info rounded-3 py-2 px-3 small d-none mb-3">
+                        <i class="bi bi-clock-history me-1"></i>
+                        <strong>Registro de Histórico Anterior Conhecido:</strong> informe a data aproximada ou documental em que o animal recebeu esta vacina, vermífugo ou exame antes ou fora do agendamento atual.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Item do Catálogo Preventivo <span class="text-danger">*</span></label>
+                            <select class="form-select" name="vaccine_id" required>
+                                <option value="">Selecione vacina, vermífugo ou exame...</option>
+                                {% for vac in active_vaccines %}
+                                    <option
+                                        value="{{ vac.id }}"
+                                        data-item-type="{{ vac.item_type or 'vacina' }}"
+                                        data-manufacturer="{{ vac.manufacturer }}"
+                                        data-route="{{ vac.administration_route }}"
+                                        data-unit="{{ vac.dosage_unit }}"
+                                    >
+                                        [{{ vac.item_type_label or 'Vacina' }}] {{ vac.commercial_name }} ({{ vac.manufacturer }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Nº da Dose / Coleta <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="dose_number" min="1" max="20" value="1" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Data e Horário da Realização <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="applied_at" value="{{ now_dt_local }}" required>
+                        </div>
+
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Dosagem / Qtd. <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0" class="form-control" name="dosage" placeholder="Ex.: 2.0" required>
+                        </div>
+
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Unidade <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="dosage_unit" value="mL" required>
+                        </div>
+
+                        <div class="col-12 d-none" id="applyExamResultGroup">
+                            <label class="form-label fw-semibold text-fern">
+                                <i class="bi bi-clipboard2-pulse me-1"></i> Resultado / Laudo do Exame (AIE, Mormo, OPG, Brucelose...)
+                            </label>
+                            <input type="text" class="form-control" name="exam_result" placeholder="Ex.: Negativo (Laudo nº 4812) / OPG: 150 ovos/g">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Via de Administração / Coleta <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="administration_route" list="routeSuggestions" placeholder="Subcutânea, Oral, Coleta Sanguínea..." required>
+                            <datalist id="routeSuggestions">
+                                <option value="Subcutânea">
+                                <option value="Intramuscular">
+                                <option value="Oral">
+                                <option value="Intranasal">
+                                <option value="Pour-on / Tópica">
+                                <option value="Coleta Sanguínea / Laboratorial">
+                                <option value="Coleta Coprológica (OPG)">
+                            </datalist>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Fabricante / Laboratório <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="manufacturer" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Lote / Nº Protocolo <span id="applyBatchRequiredStar" class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" name="product_batch" placeholder="Ex.: LT-2026A" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Validade do Produto / Laudo</label>
+                            <input type="date" class="form-control" name="product_expiry">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Próxima Dose / Renovação</label>
+                            <input type="date" class="form-control" name="next_dose_date">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label">Responsável / Veterinário <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="applied_by" value="{{ current_operator.name }}" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            <textarea class="form-control" name="notes" rows="2" placeholder="Condição do animal, escore corporal, local da aplicação ou observações técnicas..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-agro">
+                        <i class="bi bi-check2-circle me-1"></i> Confirmar e Gravar no Histórico
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reutilizável: Alterar Situação Não-Realizada / Cancelada / Desconhecida -->
+<div class="modal fade no-print" id="scheduleStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form method="POST" action="">
+                <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                <div class="modal-header border-bottom pb-2">
+                    <h5 class="modal-title fw-bold">Atualizar Situação do Agendamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="statusModalScheduleDesc" class="small text-muted fw-semibold mb-3"></p>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Situação</label>
+                        <select class="form-select" name="status" required>
+                            <option value="nao_realizada">Não realizada</option>
+                            <option value="historico_desconhecido">Histórico desconhecido</option>
+                            <option value="cancelada">Cancelada</option>
+                            <option value="pendente">Retornar para Pendente</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Justificativa para Auditoria no Histórico <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="reason" rows="3" placeholder="Informe o motivo desta atualização..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-olive">Salvar Alteração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

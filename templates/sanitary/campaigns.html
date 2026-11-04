@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Cartelas de Vacinação — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Cartelas e Campanhas de Vacinação</h1>
+        <p class="text-muted small mb-0">Acompanhe o percentual de conclusão e confirme aplicações individuais de cada campanha.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        {% if ctx and ctx.properties %}
+            <form method="GET" action="{{ url_for('sanitary.campaigns_list') }}">
+                <select name="property_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todas as propriedades</option>
+                    {% for p in ctx.properties %}
+                        <option value="{{ p.id }}" {% if selected_property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
+        <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+        </a>
+    </div>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if campaigns %}
+    <div class="row g-4">
+        {% for camp in campaigns %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card-agro p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <span class="badge bg-success-subtle text-success-emphasis">
+                                {{ camp.properties.name if camp.properties else 'Propriedade' }}
+                            </span>
+                            {% if camp.status == 'concluida' %}
+                                <span class="badge-status-applied">Concluída</span>
+                            {% elif camp.status == 'em_andamento' %}
+                                <span class="badge-status-pending">Em andamento</span>
+                            {% else %}
+                                <span class="badge-status-upcoming">Programada</span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="fw-bold mb-1">{{ camp.name }}</h5>
+                        <div class="small text-muted mb-3">
+                            <div><i class="bi bi-eyedropper me-1"></i> {{ camp.vaccines.commercial_name if camp.vaccines else 'Vacina' }}</div>
+                            <div><i class="bi bi-calendar-event me-1"></i> Previsão: {{ camp.scheduled_date | date_br }}</div>
+                            <div>
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                {% if camp.lots %}Lote: {{ camp.lots.name }}{% else %}Seleção manual de animais{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small fw-bold mb-1">
+                                <span>Conclusão da Cartela</span>
+                                <span class="text-success">{{ camp.completion_pct }}%</span>
+                            </div>
+                            <div class="progress progress-agro">
+                                <div class="progress-bar" style="width: {{ camp.completion_pct }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-3">
+                                <div class="p-2 rounded-3 bg-light border">
+                                    <div class="fw-bold">{{ camp.total_animals }}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Total</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 rounded-3 bg-light border">
+                                    <div class="fw-bold text-success">{{ camp.applied_count }}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Realizadas</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 rounded-3 bg-light border">
+                                    <div class="fw-bold text-warning-emphasis">{{ camp.pending_count }}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Pendentes</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 rounded-3 bg-light border">
+                                    <div class="fw-bold {% if camp.overdue_count > 0 %}text-danger{% endif %}">{{ camp.overdue_count }}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Atrasadas</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('sanitary.campaign_detail', campaign_id=camp.id) }}" class="btn btn-agro w-100">
+                        <i class="bi bi-folder2-open me-1"></i> Abrir Cartela Individual
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% elif not migration_error %}
+    <div class="card-agro p-5 text-center">
+        <div class="stat-icon stat-icon-green mx-auto mb-3"><i class="bi bi-ui-checks-grid"></i></div>
+        <h5 class="fw-bold">Nenhuma cartela de vacinação cadastrada</h5>
+        <p class="text-muted small mb-4">
+            Crie uma campanha selecionando um lote inteiro ou pesquisando animais individualmente.
+            Cada animal receberá seu próprio agendamento independente.
+        </p>
+        <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> Criar Primeira Campanha
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

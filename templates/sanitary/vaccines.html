@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo Preventivo (Vacinas, Vermífugos &amp; Exames) — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Catálogo Preventivo Multi-Espécie</h1>
+        <p class="text-muted small mb-0">
+            Cadastre vacinas, vermífugos/antiparasitários e exames periódicos (AIE, Mormo, OPG, Brucelose) por espécie.
+        </p>
+    </div>
+
+    <form method="GET" action="{{ url_for('sanitary.vaccines_view') }}" class="d-flex flex-wrap gap-2">
+        <select name="item_type" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if selected_item_type == 'todos' %}selected{% endif %}>Todos os tipos</option>
+            {% for tslug, tmeta in preventive_item_types.items() %}
+                <option value="{{ tslug }}" {% if selected_item_type == tslug %}selected{% endif %}>{{ tmeta.plural }}</option>
+            {% endfor %}
+        </select>
+        <select name="species" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
+            {% for sp_slug, sp_info in species_meta.items() %}
+                <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
+                    {{ sp_info.emoji }} {{ sp_info.plural }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if not migration_error %}
+<div class="row g-4">
+    <!-- Formulário de Cadastro / Edição -->
+    <div class="col-lg-4">
+        <div class="card-agro p-4">
+            <h5 class="fw-bold mb-3">
+                {% if editing_vaccine %}
+                    <i class="bi bi-pencil-square text-success me-1"></i> Editar Item Preventivo
+                {% else %}
+                    <i class="bi bi-plus-circle text-success me-1"></i> Cadastrar no Catálogo
+                {% endif %}
+            </h5>
+
+            <form method="POST" action="{{ url_for('sanitary.vaccines_view') }}">
+                {% if editing_vaccine %}
+                    <input type="hidden" name="vaccine_id" value="{{ editing_vaccine.id }}">
+                {% endif %}
+
+                <div class="row g-2 mb-3">
+                    <div class="col-7">
+                        <label class="form-label">Tipo de Item <span class="text-danger">*</span></label>
+                        <select class="form-select" name="item_type" id="catalogItemTypeSelect" required>
+                            {% for tslug, tmeta in preventive_item_types.items() %}
+                                <option
+                                    value="{{ tslug }}"
+                                    data-default-route="{{ tmeta.default_route }}"
+                                    data-default-unit="{{ tmeta.default_unit }}"
+                                    {% if editing_vaccine and editing_vaccine.item_type == tslug %}selected{% endif %}
+                                >
+                                    {{ tmeta.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label">Espécie-Alvo</label>
+                        <select class="form-select" name="target_species">
+                            {% for tslug, tlabel in target_species_labels.items() %}
+                                <option value="{{ tslug }}" {% if editing_vaccine and editing_vaccine.target_species == tslug %}selected{% endif %}>
+                                    {{ tlabel }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nome Comercial / Exame <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="commercial_name" placeholder="Ex.: Tétano/Influenza Equina, Exame AIE/Mormo, Vermífugo Oral..." value="{{ editing_vaccine.commercial_name if editing_vaccine else '' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Fabricante / Laboratório <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="manufacturer" placeholder="Ex.: Ourofino, Zoetis, Lab. Credenciado MAPA..." value="{{ editing_vaccine.manufacturer if editing_vaccine else '' }}" required>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-7">
+                        <label class="form-label">Via / Coleta <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="administration_route" id="catalogRouteInput" list="vacRoutes" value="{{ editing_vaccine.administration_route if editing_vaccine else 'Subcutânea' }}" required>
+                        <datalist id="vacRoutes">
+                            <option value="Subcutânea">
+                            <option value="Intramuscular">
+                            <option value="Oral">
+                            <option value="Intranasal">
+                            <option value="Pour-on / Tópica">
+                            <option value="Coleta Sanguínea / Laboratorial">
+                            <option value="Coleta Coprológica (OPG)">
+                        </datalist>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label">Unidade <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="dosage_unit" id="catalogUnitInput" value="{{ editing_vaccine.dosage_unit if editing_vaccine else 'mL' }}" placeholder="mL, g, exame..." required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" name="description" rows="2">{{ editing_vaccine.description or '' if editing_vaccine else '' }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações / Carência</label>
+                    <textarea class="form-control" name="notes" rows="2" placeholder="Armazenamento, período de carência ou validade legal do laudo...">{{ editing_vaccine.notes or '' if editing_vaccine else '' }}</textarea>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="vacActiveSwitch" name="is_active" value="true"
+                           {% if not editing_vaccine or editing_vaccine.is_active %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="vacActiveSwitch">Item ativo no catálogo</label>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-agro">
+                        {% if editing_vaccine %}Salvar Alterações{% else %}Salvar no Catálogo{% endif %}
+                    </button>
+                    {% if editing_vaccine %}
+                        <a href="{{ url_for('sanitary.vaccines_view') }}" class="btn btn-outline-secondary rounded-3">Cancelar edição</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Listagem do Catálogo -->
+    <div class="col-lg-8">
+        <div class="card-agro p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Itens Cadastrados ({{ vaccines | length }})</h5>
+            </div>
+
+            {% if vaccines %}
+                <div class="table-responsive">
+                    <table class="table table-agro align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Item &amp; Tipo</th>
+                                <th>Espécie-Alvo</th>
+                                <th>Fabricante / Via</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in vaccines %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ v.commercial_name }}</div>
+                                        <span class="{{ v.item_type_badge_class }} mt-1 d-inline-block">
+                                            <i class="bi {{ v.item_type_icon }} me-1"></i>{{ v.item_type_label }}
+                                        </span>
+                                        {% if v.description %}
+                                            <div class="small text-muted mt-1">{{ v.description }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if v.target_species in species_meta %}
+                                            <span class="{{ species_meta[v.target_species].badge_class }}">
+                                                {{ species_meta[v.target_species].emoji }} {{ species_meta[v.target_species].plural }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark border">Todas as espécies</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small">
+                                        <div class="fw-semibold">{{ v.manufacturer }}</div>
+                                        <div class="text-muted">{{ v.administration_route }} &bull; {{ v.dosage_unit }}</div>
+                                    </td>
+                                    <td>
+                                        {% if v.is_active %}
+                                            <span class="badge-status-applied">Ativo</span>
+                                        {% else %}
+                                            <span class="badge-status-cancelled">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ url_for('sanitary.vaccines_view', editar=v.id) }}" class="btn btn-sm btn-outline-agro">
+                                                Editar
+                                            </a>
+                                            <form method="POST" action="{{ url_for('sanitary.vaccine_toggle', vaccine_id=v.id) }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                    {% if v.is_active %}Inativar{% else %}Ativar{% endif %}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted small text-center py-4 mb-0">Nenhum item preventivo encontrado para este filtro.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if not editing_vaccine %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const typeSel = document.getElementById("catalogItemTypeSelect");
+    const routeInp = document.getElementById("catalogRouteInput");
+    const unitInp = document.getElementById("catalogUnitInput");
+    if (!typeSel || !routeInp || !unitInp) return;
+    typeSel.addEventListener("change", () => {
+        const opt = typeSel.options[typeSel.selectedIndex];
+        if (!opt) return;
+        routeInp.value = opt.getAttribute("data-default-route") || "Subcutânea";
+        unitInp.value = opt.getAttribute("data-default-unit") || "mL";
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Cartela: {{ campaign.name }} — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('sanitary.campaigns_list') }}" class="text-decoration-none text-muted">Cartelas</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ campaign.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-0">{{ campaign.name }}</h1>
+    </div>
+    <a href="{{ url_for('sanitary.campaigns_list') }}" class="btn btn-sm btn-olive">
+        <i class="bi bi-arrow-left me-1"></i> Voltar às Cartelas
+    </a>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+<!-- Cabeçalho Resumo da Cartela -->
+<div class="card-agro p-4 mb-4">
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-6">
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <span class="badge bg-success-subtle text-success-emphasis">{{ campaign.properties.name if campaign.properties else '' }}</span>
+                {% if campaign.lots %}
+                    <span class="badge bg-light text-dark border">Lote: {{ campaign.lots.name }}</span>
+                {% else %}
+                    <span class="badge bg-light text-dark border">Seleção Manual</span>
+                {% endif %}
+            </div>
+            <h5 class="fw-bold mb-1">
+                <i class="bi bi-eyedropper text-success me-1"></i>
+                {{ campaign.vaccines.commercial_name if campaign.vaccines else 'Vacina' }}
+            </h5>
+            <p class="small text-muted mb-1">
+                Data Prevista: <strong>{{ campaign.scheduled_date | date_br }}</strong>
+                {% if campaign.description %} &bull; {{ campaign.description }}{% endif %}
+            </p>
+            {% if campaign.notes %}
+                <p class="small text-secondary mb-0"><em>Obs.: {{ campaign.notes }}</em></p>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-6">
+            <div class="d-flex justify-content-between small fw-bold mb-1">
+                <span>Progresso de Conclusão</span>
+                <span class="text-success">{{ campaign.completion_pct }}% ({{ campaign.applied_count }}/{{ campaign.total_animals }})</span>
+            </div>
+            <div class="progress progress-agro mb-3">
+                <div class="progress-bar" style="width: {{ campaign.completion_pct }}%"></div>
+            </div>
+
+            <div class="row g-2 text-center">
+                <div class="col-3">
+                    <div class="p-2 rounded-3 border bg-light-subtle">
+                        <div class="fw-bold">{{ campaign.total_animals }}</div>
+                        <div class="small text-muted">Animais</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded-3 border bg-light-subtle">
+                        <div class="fw-bold text-success">{{ campaign.applied_count }}</div>
+                        <div class="small text-muted">Aplicadas</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded-3 border bg-light-subtle">
+                        <div class="fw-bold">{{ campaign.pending_count }}</div>
+                        <div class="small text-muted">Pendentes</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded-3 border bg-light-subtle">
+                        <div class="fw-bold {% if campaign.overdue_count > 0 %}text-danger{% endif %}">{{ campaign.overdue_count }}</div>
+                        <div class="small text-muted">Atrasadas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista Individual de Animais da Cartela -->
+<div class="card-agro p-4">
+    <h5 class="fw-bold mb-3">Animais Vinculados à Cartela</h5>
+
+    <div class="table-responsive">
+        <table class="table table-agro align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Brinco / Nome</th>
+                    <th>Categoria Etária</th>
+                    <th>Situação Individual</th>
+                    <th>Registro de Aplicação</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in campaign.schedules %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('animal_detail', token=s.animal.qr_code_token) }}" class="text-decoration-none">
+                                <span class="badge-ear-tag">#{{ s.animal.ear_tag }}</span>
+                            </a>
+                            <span class="fw-semibold ms-1">{{ s.animal.name or "" }}</span>
+                        </td>
+                        <td>
+                            <span class="{{ s.animal.age_badge_class }}">{{ s.animal.age_category_name }}</span>
+                            <div class="small text-muted">{{ s.animal.age_label }}</div>
+                        </td>
+                        <td>
+                            <span class="{{ s.status_badge_class }}">{{ s.status_label }}</span>
+                        </td>
+                        <td class="small">
+                            {% if s.application_record %}
+                                <div class="fw-semibold text-success">{{ s.application_record.applied_at | datetime_br }}</div>
+                                <div class="text-muted">
+                                    {{ s.application_record.dosage }} {{ s.application_record.dosage_unit }} &bull;
+                                    Lote: {{ s.application_record.product_batch or '—' }} &bull;
+                                    {{ s.application_record.applied_by }}
+                                </div>
+                            {% elif s.status_reason %}
+                                <span class="text-muted">{{ s.status_reason }}</span>
+                            {% else %}
+                                <span class="text-muted">Aguardando confirmação</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2">
+                                {% if s.status in ('pendente', 'proxima_aplicacao', 'atrasada') %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-agro js-open-apply-modal"
+                                        data-schedule-id="{{ s.id }}"
+                                        data-animal-id="{{ s.animal_id }}"
+                                        data-animal-label="#{{ s.animal.ear_tag }}{% if s.animal.name %} — {{ s.animal.name }}{% endif %}"
+                                        data-vaccine-id="{{ campaign.vaccine_id }}"
+                                        data-dose-number="{{ s.dose_number }}"
+                                        data-manufacturer="{{ campaign.vaccines.manufacturer if campaign.vaccines else '' }}"
+                                        data-route="{{ campaign.vaccines.administration_route if campaign.vaccines else '' }}"
+                                        data-unit="{{ campaign.vaccines.dosage_unit if campaign.vaccines else 'mL' }}"
+                                    >
+                                        <i class="bi bi-check2-circle me-1"></i> Registrar Aplicação
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-secondary js-open-status-modal"
+                                        data-action-url="{{ url_for('sanitary.update_schedule_status', schedule_id=s.id) }}"
+                                        data-schedule-desc="Brinco #{{ s.animal.ear_tag }} — {{ campaign.name }}"
+                                    >
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('animal_detail', token=s.animal.qr_code_token) }}" class="btn btn-sm btn-outline-agro">
+                                        Ver Carteira
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "sanitary/_apply_modal.html" %}
+{% endblock %}

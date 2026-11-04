@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Propriedades, Haras, Cabanhas &amp; Lotes — Animora{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1 class="h3 fw-bold mb-1">Propriedades Rurais, Haras, Cabanhas &amp; Lotes</h1>
+    <p class="text-muted small mb-0">
+        Uma mesma propriedade pode alojar bovinos, equinos e ovinos simultaneamente, com lotes e protocolos separados por espécie.
+    </p>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+<div class="row g-4">
+    <!-- Propriedades -->
+    <div class="col-lg-6">
+        <div class="card-agro p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success me-1"></i> Nova Propriedade / Haras / Cabanha</h5>
+            <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
+                <input type="hidden" name="entity_type" value="property">
+                <div class="row g-2">
+                    <div class="col-md-7">
+                        <label class="form-label small">Nome da Propriedade <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" placeholder="Ex.: Fazenda & Haras Santa Clara" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small">Vocação Principal</label>
+                        <select class="form-select" name="production_focus">
+                            {% for fslug, flabel in property_focus_labels.items() %}
+                                <option value="{{ fslug }}">{{ flabel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small">Município</label>
+                        <input type="text" class="form-control" name="municipality" placeholder="Ex.: Uberaba">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">UF</label>
+                        <input type="text" class="form-control" name="state" maxlength="2" placeholder="MG">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Código</label>
+                        <input type="text" class="form-control" name="code" placeholder="PROP-02">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-agro w-100 mt-3">Cadastrar Propriedade</button>
+            </form>
+        </div>
+
+        <div class="card-agro p-4">
+            <h6 class="fw-bold mb-3">Propriedades Ativas ({{ ctx.properties | length }})</h6>
+            <div class="d-grid gap-2">
+                {% for p in ctx.properties %}
+                    <div class="p-3 rounded-3 border bg-light-subtle d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ p.name }}</div>
+                            <div class="small text-muted">
+                                {{ p.municipality or '—' }}{% if p.state %}/{{ p.state }}{% endif %} &bull; {{ property_focus_labels.get(p.production_focus, p.production_focus | title) }}
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis">{{ p.code or 'Ativa' }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Lotes -->
+    <div class="col-lg-6">
+        <div class="card-agro p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-diagram-3 text-success me-1"></i> Novo Lote / Grupo de Manejo</h5>
+            <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
+                <input type="hidden" name="entity_type" value="lot">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-7">
+                        <label class="form-label small">Propriedade <span class="text-danger">*</span></label>
+                        <select class="form-select" name="property_id" required>
+                            {% for p in ctx.properties %}
+                                <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small">Espécie do Lote</label>
+                        <select class="form-select" name="target_species">
+                            {% for tslug, tlabel in target_species_labels.items() %}
+                                <option value="{{ tslug }}">{{ tlabel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Nome do Lote / Pavilhão <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="name" placeholder="Ex.: Pavilhão Éguas Doadoras / Aprisco Matrizes / Lote Cria" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Descrição</label>
+                    <input type="text" class="form-control" name="description" placeholder="Piquete, cocheira, galpão ou finalidade do grupo">
+                </div>
+                <button type="submit" class="btn btn-olive w-100">Cadastrar Lote</button>
+            </form>
+        </div>
+
+        <div class="card-agro p-4">
+            <h6 class="fw-bold mb-3">Lotes Cadastrados ({{ ctx.lots | length }})</h6>
+            {% if ctx.lots %}
+                <div class="d-grid gap-2">
+                    {% for l in ctx.lots %}
+                        <div class="p-3 rounded-3 border bg-light-subtle d-flex justify-content-between align-items-center gap-2">
+                            <div>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="fw-bold">{{ l.name }}</span>
+                                    {% if l.target_species in species_meta %}
+                                        <span class="{{ species_meta[l.target_species].badge_class }}">
+                                            {{ species_meta[l.target_species].emoji }} {{ species_meta[l.target_species].plural }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="small text-muted">{{ l.description or 'Sem descrição' }}</div>
+                            </div>
+                            <span class="badge bg-light text-dark border">{{ l.properties.name if l.properties else '' }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="small text-muted mb-0">Nenhum lote cadastrado ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

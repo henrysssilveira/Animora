@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso Property &amp; Admin — Animora{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-3">
+    <div class="col-md-9 col-lg-6">
+        <div class="card-agro p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="stat-icon stat-icon-pink mx-auto mb-3">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h1 class="h4 fw-bold mb-1">Acesso à Plataforma Animora</h1>
+                <p class="text-muted small mb-0">
+                    Visitantes <strong>Common</strong> não precisam de login para consultar etiquetas QR.
+                    Selecione abaixo seu nível para gerenciar animais, vacinas ou criar QR Codes.
+                </p>
+            </div>
+
+            <form method="POST" action="{{ url_for('operator_login') }}" id="accessLoginForm">
+                <input type="hidden" name="next" value="{{ next_url }}">
+
+                <!-- Seleção de Nível: Property vs Admin -->
+                <label class="form-label mb-2">Nível de Acesso Desejado</label>
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <input
+                            type="radio"
+                            class="btn-check"
+                            name="access_level"
+                            id="levelProperty"
+                            value="property"
+                            {% if selected_level != 'admin' %}checked{% endif %}
+                        >
+                        <label class="access-level-card d-block" for="levelProperty">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge-level-property">Property</span>
+                                <i class="bi bi-heart-pulse text-fern"></i>
+                            </div>
+                            <div class="fw-bold small">Propriedade &amp; Vacinação</div>
+                            <div class="text-muted" style="font-size: 0.78rem;">
+                                Adicionar e atribuir animais às etiquetas + carteira sanitária e vacinas.
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <input
+                            type="radio"
+                            class="btn-check"
+                            name="access_level"
+                            id="levelAdmin"
+                            value="admin"
+                            {% if selected_level == 'admin' %}checked{% endif %}
+                        >
+                        <label class="access-level-card d-block" for="levelAdmin">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge-level-admin">Admin</span>
+                                <i class="bi bi-qr-code-scan text-brand"></i>
+                            </div>
+                            <div class="fw-bold small">Administração &amp; QR Codes</div>
+                            <div class="text-muted" style="font-size: 0.78rem;">
+                                Criação e impressão de novos QR Codes em lote + acesso completo.
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {% if show_property_dev_hint or show_admin_dev_hint %}
+                    <div class="alert alert-warning rounded-3 py-2 px-3 small mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <strong>Ambiente de desenvolvimento (.env):</strong>
+                        {% if show_property_dev_hint %}
+                            <div>Chave <strong>Property</strong> padrão: <code>{{ default_property_pin }}</code> (<code>ANIMORA_PROPERTY_PIN</code>)</div>
+                        {% endif %}
+                        {% if show_admin_dev_hint %}
+                            <div>Chave <strong>Admin</strong> padrão: <code>{{ default_admin_pin }}</code> (<code>ANIMORA_ADMIN_PIN</code>)</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="operator_name" class="form-label">Seu Nome / Identificação (CRMV opcional)</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="operator_name"
+                        name="operator_name"
+                        placeholder="Ex.: Dra. Helena Prado — CRMV-MG 12345"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3" id="propertyRoleWrapper" {% if selected_level == 'admin' %}style="display:none;"{% endif %}>
+                    <label for="operator_role" class="form-label">Função na Propriedade</label>
+                    <select class="form-select" id="operator_role" name="operator_role">
+                        {% for slug, label in roles.items() %}
+                            <option value="{{ slug }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        E-mail Supabase Auth <span class="text-muted fw-normal">(opcional — deixe em branco para usar Chave/PIN)</span>
+                    </label>
+                    <input
+                        type="email"
+                        class="form-control"
+                        id="email"
+                        name="email"
+                        placeholder="usuario@animora.com.br"
+                    >
+                </div>
+
+                <div class="mb-4">
+                    <label for="access_pin" class="form-label">
+                        <span id="pinLabelText">
+                            {% if selected_level == 'admin' %}Chave de Acesso Admin ou Senha{% else %}Chave de Acesso Property ou Senha{% endif %}
+                        </span>
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="access_pin"
+                        name="access_pin"
+                        value="{% if selected_level == 'admin' %}{{ default_admin_pin }}{% else %}{{ default_property_pin }}{% endif %}"
+                        data-prop-pin="{{ default_property_pin }}"
+                        data-admin-pin="{{ default_admin_pin }}"
+                        placeholder="Digite a chave do nível selecionado"
+                        required
+                    >
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-agro py-2">
+                        <i class="bi bi-unlock-fill me-1"></i> Entrar na Plataforma
+                    </button>
+                    <a href="{{ url_for('public_lookup') }}" class="btn btn-outline-secondary rounded-3">
+                        Continuar como Common (Consulta Pública)
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const propRadio = document.getElementById("levelProperty");
+    const adminRadio = document.getElementById("levelAdmin");
+    const roleWrapper = document.getElementById("propertyRoleWrapper");
+    const pinLabel = document.getElementById("pinLabelText");
+    const pinInput = document.getElementById("access_pin");
+
+    const syncLevelUi = () => {
+        const isAdmin = adminRadio && adminRadio.checked;
+        if (roleWrapper) {
+            roleWrapper.style.display = isAdmin ? "none" : "";
+        }
+        if (pinLabel) {
+            pinLabel.textContent = isAdmin
+                ? "Chave de Acesso Admin ou Senha"
+                : "Chave de Acesso Property ou Senha";
+        }
+        if (pinInput) {
+            const propDefault = pinInput.getAttribute("data-prop-pin") || "";
+            const adminDefault = pinInput.getAttribute("data-admin-pin") || "";
+            if (isAdmin && adminDefault && (!pinInput.value || pinInput.value === propDefault)) {
+                pinInput.value = adminDefault;
+            } else if (!isAdmin && propDefault && (!pinInput.value || pinInput.value === adminDefault)) {
+                pinInput.value = propDefault;
+            }
+        }
+    };
+
+    if (propRadio) propRadio.addEventListener("change", syncLevelUi);
+    if (adminRadio) adminRadio.addEventListener("change", syncLevelUi);
+});
+</script>
+{% endblock %}

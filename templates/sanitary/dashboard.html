@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Sanidade &amp; Manejo Multi-Espécie — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Sanidade, Preventivos &amp; Manejo Inteligente</h1>
+        <p class="text-muted small mb-0">Indicadores integrados para Bovinos, Equinos e Ovinos a partir dos protocolos e rotinas ativas.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        {% if ctx and ctx.properties %}
+            <form method="GET" action="{{ url_for('sanitary.dashboard') }}" class="d-flex flex-wrap gap-2">
+                <select name="property_id" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Todas as propriedades</option>
+                    {% for p in ctx.properties %}
+                        <option value="{{ p.id }}" {% if selected_property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="species" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
+                    {% for sp_slug, sp_info in species_meta.items() %}
+                        <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
+                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <form method="POST" action="{{ url_for('sanitary.sync_schedules') }}">
+                <input type="hidden" name="property_id" value="{{ selected_property_id }}">
+                <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                <button type="submit" class="btn btn-sm btn-outline-agro">
+                    <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Pendências
+                </button>
+            </form>
+        {% endif %}
+
+        <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+        </a>
+    </div>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if kpis %}
+    <!-- Linha 1: Indicadores Etários Neutros do Plantel -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h6 class="text-uppercase small fw-bold text-muted mb-0">Composição Etária do Plantel Ativo</h6>
+        <div class="d-flex flex-wrap gap-2 small">
+            <span class="badge-species-bovino">🐄 Bovinos: {{ kpis.bovinos_count }}</span>
+            <span class="badge-species-equino">🐎 Equinos: {{ kpis.equinos_count }}</span>
+            <span class="badge-species-ovino">🐑 Ovinos: {{ kpis.ovinos_count }}</span>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl">
+            <div class="kpi-mini-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="small text-muted fw-semibold">Total de Animais</div>
+                    <div class="kpi-mini-value mt-1">{{ kpis.total_animals }}</div>
+                </div>
+                <span class="stat-icon stat-icon-green"><i class="bi bi-tags-fill"></i></span>
+            </div>
+        </div>
+        <div class="col-6 col-xl">
+            <a href="{{ url_for('sanitary.health_cards_index', age_category='recem_nascido', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="small text-muted fw-semibold">Recém-nascidos</div>
+                <div class="kpi-mini-value mt-1">{{ kpis.newborns_count }}</div>
+                <div class="small text-muted">0 a 30 dias</div>
+            </a>
+        </div>
+        <div class="col-6 col-xl">
+            <a href="{{ url_for('sanitary.health_cards_index', age_category='lactente', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="small text-muted fw-semibold">Lactentes / Filhotes</div>
+                <div class="kpi-mini-value mt-1">{{ kpis.lactentes_count }}</div>
+                <div class="small text-muted">31 a 180 dias</div>
+            </a>
+        </div>
+        <div class="col-6 col-xl">
+            <a href="{{ url_for('sanitary.health_cards_index', age_category='jovem', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="small text-muted fw-semibold">Animais Jovens</div>
+                <div class="kpi-mini-value mt-1">{{ kpis.young_count }}</div>
+                <div class="small text-muted">181 a 365 dias</div>
+            </a>
+        </div>
+        <div class="col-6 col-xl">
+            <a href="{{ url_for('sanitary.health_cards_index', age_category='adulto', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="small text-muted fw-semibold">Adultos</div>
+                <div class="kpi-mini-value mt-1">{{ kpis.adults_count }}</div>
+                <div class="small text-muted">Acima de 365 dias</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Linha 2: Indicadores Sanitários & Manejo -->
+    <h6 class="text-uppercase small fw-bold text-muted mb-2">Situação Preventiva &amp; Retornos de Manejo</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('sanitary.calendar_view', status='pendente', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Preventivos Pendentes</span>
+                    <span class="badge-status-pending">Na janela</span>
+                </div>
+                <div class="kpi-mini-value">{{ kpis.pending_vaccinations }}</div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('sanitary.calendar_view', status='atrasada', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Preventivos Atrasados</span>
+                    <span class="badge-status-overdue">Atenção</span>
+                </div>
+                <div class="kpi-mini-value {% if kpis.overdue_vaccinations > 0 %}text-danger{% endif %}">{{ kpis.overdue_vaccinations }}</div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('sanitary.calendar_view', status='proxima_aplicacao', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Próximas Aplicações</span>
+                    <span class="badge-status-upcoming">Futuras</span>
+                </div>
+                <div class="kpi-mini-value">{{ kpis.upcoming_vaccinations }}</div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('sanitary.management_routines_view', property_id=selected_property_id, species=selected_species) }}" class="text-decoration-none d-block kpi-mini-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Retornos de Manejo</span>
+                    {% if kpis.overdue_management_count > 0 %}
+                        <span class="badge-status-overdue">{{ kpis.overdue_management_count }} atras.</span>
+                    {% else %}
+                        <span class="badge-status-applied">Cascos/Tosquia</span>
+                    {% endif %}
+                </div>
+                <div class="kpi-mini-value {% if kpis.overdue_management_count > 0 %}text-danger{% endif %}">
+                    {{ kpis.overdue_management_count + kpis.upcoming_management_count }}
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Linha 3: Próximas Atividades Sanitárias + Manejo & Cartelas -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-agro p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-calendar2-week text-success me-1"></i> Próximas Atividades Preventivas
+                    </h5>
+                    <a href="{{ url_for('sanitary.calendar_view', species=selected_species) }}" class="btn btn-sm btn-outline-agro">
+                        Abrir Calendário
+                    </a>
+                </div>
+
+                {% if kpis.upcoming_activities %}
+                    <div class="table-responsive">
+                        <table class="table table-agro align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Animal</th>
+                                    <th>Item Preventivo / Dose</th>
+                                    <th>Data Prevista</th>
+                                    <th>Situação</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in kpis.upcoming_activities %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('animal_detail', token=item.animal.qr_code_token) }}" class="text-decoration-none">
+                                                <span class="badge-ear-tag">#{{ item.animal.ear_tag }}</span>
+                                            </a>
+                                            <div class="small text-muted mt-1">
+                                                {{ item.animal.species_emoji }} {{ item.animal.name or item.animal.age_category_name }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">{{ item.vaccines.commercial_name if item.vaccines else 'Preventivo' }}</div>
+                                            <div class="small text-muted">
+                                                {{ item.vaccines.item_type_label if item.vaccines else 'Vacina' }} &bull; {{ item.dose_number }}ª &bull; {{ item.properties.name if item.properties else '' }}
+                                            </div>
+                                        </td>
+                                        <td class="small">
+                                            {{ item.scheduled_date | date_br }}
+                                            {% if item.window_end_date and item.window_end_date != item.scheduled_date %}
+                                                <div class="text-muted">até {{ item.window_end_date | date_br }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="{{ item.status_badge_class }}">{{ item.status_label }}</span></td>
+                                        <td class="text-end">
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-agro js-open-apply-modal"
+                                                data-schedule-id="{{ item.id }}"
+                                                data-animal-id="{{ item.animal_id }}"
+                                                data-animal-label="#{{ item.animal.ear_tag }}{% if item.animal.name %} — {{ item.animal.name }}{% endif %}"
+                                                data-vaccine-id="{{ item.vaccine_id }}"
+                                                data-dose-number="{{ item.dose_number }}"
+                                                data-manufacturer="{{ item.vaccines.manufacturer if item.vaccines else '' }}"
+                                                data-route="{{ item.vaccines.administration_route if item.vaccines else '' }}"
+                                                data-unit="{{ item.vaccines.dosage_unit if item.vaccines else 'mL' }}"
+                                            >
+                                                <i class="bi bi-check2-circle me-1"></i> Confirmar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 px-3">
+                        <div class="stat-icon stat-icon-olive mx-auto mb-3"><i class="bi bi-check2-all"></i></div>
+                        <h6 class="fw-bold">Nenhuma pendência preventiva imediata</h6>
+                        <p class="text-muted small mb-3">
+                            Cadastre vacinas, vermífugos ou exames no catálogo e configure protocolos por espécie para gerar agendamentos automáticos.
+                        </p>
+                        <a href="{{ url_for('sanitary.protocols_view') }}" class="btn btn-agro btn-sm">Configurar Protocolos</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <!-- Alertas de Manejo por Espécie -->
+            <div class="card-agro p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-tools text-fern me-1"></i> Retornos de Manejo
+                    </h5>
+                    <a href="{{ url_for('sanitary.management_routines_view', species=selected_species) }}" class="small fw-semibold text-success text-decoration-none">Painel</a>
+                </div>
+
+                {% if kpis.management_alerts %}
+                    <div class="d-grid gap-2">
+                        {% for ma in kpis.management_alerts[:4] %}
+                            <a href="{{ url_for('animal_detail', token=ma.animal.qr_code_token) }}#rotinas-manejo" class="p-2 px-3 rounded-3 border bg-light-subtle text-decoration-none text-dark">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="{{ ma.routine_badge_class }}">{{ ma.routine_short_label }}</span>
+                                    <span class="{{ ma.due_badge_class }}">{{ ma.due_status_label }}</span>
+                                </div>
+                                <div class="small fw-bold">{{ ma.animal.species_emoji }} #{{ ma.animal.ear_tag }} {{ ma.animal.name or '' }}</div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="small text-muted mb-2">Casqueamento, ferrageamento, tosquia e pesagem sem retornos vencidos.</p>
+                    <a href="{{ url_for('sanitary.management_routines_view') }}" class="btn btn-outline-agro btn-sm w-100">Registrar Manejo</a>
+                {% endif %}
+            </div>
+
+            <!-- Cartelas Ativas -->
+            <div class="card-agro p-4 flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-ui-checks-grid text-success me-1"></i> Cartelas Ativas
+                    </h5>
+                    <a href="{{ url_for('sanitary.campaigns_list') }}" class="small fw-semibold text-success text-decoration-none">Ver todas</a>
+                </div>
+
+                {% if kpis.recent_campaigns %}
+                    <div class="d-grid gap-3">
+                        {% for camp in kpis.recent_campaigns %}
+                            <a href="{{ url_for('sanitary.campaign_detail', campaign_id=camp.id) }}" class="p-3 rounded-3 border bg-light-subtle text-decoration-none text-dark">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small">{{ camp.name }}</span>
+                                    <span class="badge bg-success-subtle text-success-emphasis">{{ camp.completion_pct }}%</span>
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    {{ camp.vaccines.commercial_name if camp.vaccines else '' }} &bull; {{ camp.scheduled_date | date_br }}
+                                </div>
+                                <div class="progress progress-agro mb-1">
+                                    <div class="progress-bar" style="width: {{ camp.completion_pct }}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>{{ camp.applied_count }}/{{ camp.total_animals }} realizadas</span>
+                                    <span>{{ camp.pending_count }} pend.</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <p class="small text-muted mb-3">Nenhuma campanha coletiva criada ainda.</p>
+                        <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-olive btn-sm">Criar Campanha</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% include "sanitary/_apply_modal.html" %}
+{% endif %}
+{% endblock %}

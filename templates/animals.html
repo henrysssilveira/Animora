@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Plantel Multi-Espécie — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Plantel</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <h1 class="h3 fw-bold mb-0">Plantel Cadastrado</h1>
+            <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">
+                {{ animals|length }} {% if animals|length == 1 %}animal listado{% else %}animais listados{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('sanitary.management_routines_view') }}" class="btn btn-mustard">
+            <i class="bi bi-tools me-1"></i> Rotinas de Manejo
+        </a>
+        <a href="{{ url_for('sanitary.dashboard') }}" class="btn btn-olive">
+            <i class="bi bi-heart-pulse me-1"></i> Sanidade
+        </a>
+        <a href="{{ url_for('animal_new', species=selected_species if selected_species != 'todas' else 'bovino') }}" class="btn btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> {% if is_admin_authenticated %}Cadastrar Animal{% else %}Atribuir Animal{% endif %}
+        </a>
+    </div>
+</div>
+
+<!-- Filtro Principal por Espécie -->
+<div class="d-flex flex-wrap gap-2 mb-2">
+    <a href="{{ url_for('animals_list', species='todas', age_category=selected_age, property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill fw-semibold {% if selected_species in ('', 'todas') %}btn-dark{% else %}btn-outline-secondary bg-white{% endif %}">
+        Todas as Espécies ({{ overall_species_counts.total }})
+    </a>
+    <a href="{{ url_for('animals_list', species='bovino', age_category=selected_age, property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'bovino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
+        🐄 Bovinos ({{ overall_species_counts.bovino }})
+    </a>
+    <a href="{{ url_for('animals_list', species='equino', age_category=selected_age, property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'equino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
+        🐎 Equinos ({{ overall_species_counts.equino }})
+    </a>
+    <a href="{{ url_for('animals_list', species='ovino', age_category=selected_age, property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'ovino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
+        🐑 Ovinos ({{ overall_species_counts.ovino }})
+    </a>
+</div>
+
+<!-- Atalhos de Filtro Rápido por Faixa Etária Neutra -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ url_for('animals_list', species=selected_species, age_category='todas', property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill {% if selected_age in ('', 'todas') %}btn-olive{% else %}btn-outline-secondary bg-white{% endif %}">
+        Todas as idades ({{ age_summary.total }})
+    </a>
+    <a href="{{ url_for('animals_list', species=selected_species, age_category='recem_nascido', property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill {% if selected_age == 'recem_nascido' %}btn-olive{% else %}btn-outline-secondary bg-white{% endif %}">
+        Recém-nascidos ({{ age_summary.recem_nascido }})
+    </a>
+    <a href="{{ url_for('animals_list', species=selected_species, age_category='lactente', property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill {% if selected_age in ('lactente', 'bezerro') %}btn-olive{% else %}btn-outline-secondary bg-white{% endif %}">
+        Lactentes / Filhotes ({{ age_summary.lactente }})
+    </a>
+    <a href="{{ url_for('animals_list', species=selected_species, age_category='jovem', property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill {% if selected_age == 'jovem' %}btn-olive{% else %}btn-outline-secondary bg-white{% endif %}">
+        Jovens ({{ age_summary.jovem }})
+    </a>
+    <a href="{{ url_for('animals_list', species=selected_species, age_category='adulto', property_id=selected_property) }}"
+       class="btn btn-sm rounded-pill {% if selected_age == 'adulto' %}btn-olive{% else %}btn-outline-secondary bg-white{% endif %}">
+        Adultos ({{ age_summary.adulto }})
+    </a>
+</div>
+
+<div class="card-agro p-3 p-md-4">
+    <!-- Barra de busca instantânea + filtro de propriedade -->
+    <form method="GET" action="{{ url_for('animals_list') }}" class="row g-2 align-items-center mb-3">
+        <input type="hidden" name="species" value="{{ selected_species }}">
+        <input type="hidden" name="age_category" value="{{ selected_age }}">
+        <div class="col-md-6 col-lg-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input
+                    type="search"
+                    id="herdSearchInput"
+                    name="q"
+                    value="{{ search_q or '' }}"
+                    class="form-control border-start-0 ps-0"
+                    placeholder="Buscar por código QR, nome, baia/alojamento, raça ou pelagem..."
+                >
+            </div>
+        </div>
+        {% if ctx and ctx.properties %}
+            <div class="col-sm-8 col-md-4 col-lg-4">
+                <select name="property_id" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todas as propriedades</option>
+                    {% for prop in ctx.properties %}
+                        <option value="{{ prop.id }}" {% if selected_property == prop.id %}selected{% endif %}>
+                            {{ prop.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        {% if selected_species != 'todas' or selected_age != 'todas' or selected_property or search_q %}
+            <div class="col-auto">
+                <a href="{{ url_for('animals_list') }}" class="btn btn-outline-secondary rounded-3">Limpar filtros</a>
+            </div>
+        {% endif %}
+    </form>
+
+    {% if animals %}
+        <div class="table-responsive">
+            <table class="table table-agro align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Etiqueta QR</th>
+                        <th>Animal &amp; Espécie</th>
+                        <th>Idade &amp; Faixa</th>
+                        <th>Raça / Pelagem</th>
+                        <th>Propriedade &amp; Alojamento/Baia</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for animal in animals %}
+                        <tr
+                            class="herd-item-row"
+                            data-search="{{ animal.ear_tag }} {{ animal.name or '' }} {{ animal.species_label }} {{ animal.breed }} {{ animal.coat_color or '' }} {{ animal.housing_display or '' }} {{ animal.sex }} {{ animal.age_category_name }}"
+                        >
+                            <td>
+                                <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="text-decoration-none">
+                                    <span class="badge-ear-tag">#{{ animal.ear_tag }}</span>
+                                </a>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ animal.name or "—" }}</div>
+                                <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_emoji }} {{ animal.species_label }}</span>
+                                    {% if animal.sex == 'Macho' %}
+                                        <span class="badge-sex-male">Macho</span>
+                                    {% else %}
+                                        <span class="badge-sex-female">Fêmea</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="{{ animal.age_badge_class }}">{{ animal.age_category_name }}</span>
+                                <div class="small text-muted mt-1">
+                                    {{ animal.age_label }} &bull; {{ animal.birth_date | date_br }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold small">{{ animal.breed }}</div>
+                                {% if animal.coat_color %}
+                                    <div class="small text-muted">Pelagem: {{ animal.coat_color }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small fw-semibold">{{ animal.property_name }}</div>
+                                {% if animal.housing_display %}
+                                    <div class="small text-brand fw-semibold"><i class="bi bi-house-door me-1"></i>{{ animal.housing_display }}</div>
+                                {% else %}
+                                    <div class="small text-muted">{{ animal.lot_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a
+                                        href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}"
+                                        class="btn btn-sm btn-outline-secondary rounded-3"
+                                        title="Imprimir Placa de Baia / Cocho ou Ficha Cadastral"
+                                    >
+                                        <i class="bi bi-card-heading"></i>
+                                    </a>
+                                    <a
+                                        href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}"
+                                        class="btn btn-sm btn-outline-agro"
+                                        title="Baixar QR Code em PNG"
+                                    >
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    <a
+                                        href="{{ url_for('animal_detail', token=animal.qr_code_token) }}"
+                                        class="btn btn-sm btn-agro"
+                                    >
+                                        <i class="bi bi-journal-medical me-1"></i> Ficha &amp; Manejo
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="emptySearchFeedback" class="text-center py-4 d-none">
+            <p class="text-muted mb-0">Nenhum animal encontrado para o termo pesquisado.</p>
+        </div>
+    {% else %}
+        <div class="text-center py-5 px-3">
+            <div class="stat-icon stat-icon-pink mx-auto mb-3">
+                <i class="bi bi-collection"></i>
+            </div>
+            <h5 class="fw-bold">Nenhum animal encontrado neste filtro</h5>
+            <p class="text-muted small mb-4">
+                Altere a espécie/faixa etária selecionada ou cadastre um novo Bovino, Equino ou Ovino no plantel.
+            </p>
+            <a href="{{ url_for('animal_new', species=selected_species if selected_species != 'todas' else 'bovino') }}" class="btn btn-agro">
+                <i class="bi bi-plus-lg me-1"></i> Cadastrar Animal
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

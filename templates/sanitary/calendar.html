@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Calendário Sanitário &amp; Manejo — Animora{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Calendário Mensal (Sanidade &amp; Manejo)</h1>
+        <p class="text-muted small mb-0">Toque em qualquer data para visualizar vacinas, vermífugos, exames e retornos de manejo programados.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('sanitary.management_routines_view') }}" class="btn btn-sm btn-outline-agro">
+            <i class="bi bi-tools me-1"></i> Painel de Manejo
+        </a>
+        <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
+            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+        </a>
+    </div>
+</div>
+
+{% include "sanitary/_subnav.html" %}
+
+{% if cal %}
+    <!-- Filtros do Calendário (Propriedade, Espécie, Lote, Item Preventivo, Categoria Etária, Situação) -->
+    <form method="GET" action="{{ url_for('sanitary.calendar_view') }}" class="card-agro p-3 mb-4">
+        <input type="hidden" name="year" value="{{ cal.year }}">
+        <input type="hidden" name="month" value="{{ cal.month }}">
+
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Propriedade</label>
+                <select name="property_id" id="property_id" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    {% for p in ctx.properties %}
+                        <option value="{{ p.id }}" {% if filters.property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Espécie</label>
+                <select name="species" class="form-select form-select-sm">
+                    <option value="todas" {% if filters.species == 'todas' %}selected{% endif %}>Todas</option>
+                    {% for sp_slug, sp_info in species_meta.items() %}
+                        <option value="{{ sp_slug }}" {% if filters.species == sp_slug %}selected{% endif %}>
+                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Lote</label>
+                <select name="lot_id" id="lot_id" class="form-select form-select-sm" data-filter-by-property="1">
+                    <option value="">Todos</option>
+                    {% for l in ctx.lots %}
+                        <option value="{{ l.id }}" data-property-id="{{ l.property_id }}" {% if filters.lot_id == l.id %}selected{% endif %}>{{ l.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Item Preventivo</label>
+                <select name="vaccine_id" class="form-select form-select-sm">
+                    <option value="">Todos (+ Manejo)</option>
+                    {% for v in vaccines %}
+                        <option value="{{ v.id }}" {% if filters.vaccine_id == v.id %}selected{% endif %}>{{ v.commercial_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label small mb-1">Faixa Etária</label>
+                <select name="age_category" class="form-select form-select-sm">
+                    {% for slug, label in age_categories.items() %}
+                        <option value="{{ slug }}" {% if filters.age_category == slug %}selected{% endif %}>{{ label.split(' (')[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-3 col-lg-1">
+                <label class="form-label small mb-1">Situação</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="todos">Todas</option>
+                    {% for s_slug, s_info in status_meta.items() %}
+                        <option value="{{ s_slug }}" {% if filters.status == s_slug %}selected{% endif %}>{{ s_info.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2 col-lg-1 d-grid">
+                <button type="submit" class="btn btn-sm btn-agro">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-4">
+        <!-- Grade Mensal -->
+        <div class="col-lg-8">
+            <div class="card-agro p-3 p-md-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ url_for('sanitary.calendar_view', year=cal.prev_year, month=cal.prev_month, **filters) }}"
+                           class="btn btn-sm btn-outline-agro">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <h4 class="h5 fw-bold mb-0 px-2">{{ cal.month_name }} de {{ cal.year }}</h4>
+                        <a href="{{ url_for('sanitary.calendar_view', year=cal.next_year, month=cal.next_month, **filters) }}"
+                           class="btn btn-sm btn-outline-agro">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 small">
+                        <span class="badge-status-overdue">Atrasadas: {{ cal.summary.atrasadas }}</span>
+                        <span class="badge-status-pending">Previstas: {{ cal.summary.previstas }}</span>
+                        <span class="badge-status-applied">Realizadas: {{ cal.summary.realizadas }}</span>
+                        <span class="badge bg-success-subtle text-success-emphasis">Campanhas: {{ cal.summary.campanhas }}</span>
+                    </div>
+                </div>
+
+                <div class="calendar-grid mb-1">
+                    <div class="calendar-weekday">Dom</div>
+                    <div class="calendar-weekday">Seg</div>
+                    <div class="calendar-weekday">Ter</div>
+                    <div class="calendar-weekday">Qua</div>
+                    <div class="calendar-weekday">Qui</div>
+                    <div class="calendar-weekday">Sex</div>
+                    <div class="calendar-weekday">Sáb</div>
+                </div>
+
+                <div class="calendar-grid">
+                    {% for week in cal.weeks %}
+                        {% for cell in week %}
+                            <div
+                                class="calendar-day-cell {% if not cell.in_month %}outside-month{% endif %} {% if cell.is_today %}is-today{% endif %}"
+                                data-date="{{ cell.date_iso }}"
+                                data-in-month="{{ '1' if cell.in_month else '0' }}"
+                                data-has-items="{{ '1' if cell.total_items > 0 else '0' }}"
+                            >
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="calendar-day-num">{{ cell.day }}</span>
+                                    {% if cell.is_today %}
+                                        <span class="badge bg-success rounded-pill" style="font-size: 0.6rem;">Hoje</span>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    {% if cell.campaigns_count > 0 %}
+                                        <span class="calendar-pill bg-success-subtle text-success-emphasis">
+                                            {{ cell.campaigns_count }} camp.
+                                        </span>
+                                    {% endif %}
+                                    {% if cell.overdue_count > 0 %}
+                                        <span class="calendar-pill badge-status-overdue">
+                                            {{ cell.overdue_count }} atras.
+                                        </span>
+                                    {% endif %}
+                                    {% if cell.planned_count > 0 %}
+                                        <span class="calendar-pill badge-status-pending">
+                                            {{ cell.planned_count }} prev.
+                                        </span>
+                                    {% endif %}
+                                    {% if cell.applied_count > 0 %}
+                                        <span class="calendar-pill badge-status-applied">
+                                            {{ cell.applied_count }} realiz.
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel Lateral de Detalhes do Dia Selecionado -->
+        <div class="col-lg-4">
+            <div class="card-agro p-4 h-100">
+                <h5 class="fw-bold border-bottom pb-2 mb-3" id="calendarDayDetailTitle">
+                    Atividades do Dia
+                </h5>
+                <div id="calendarDayDetailBody">
+                    <p class="text-muted small mb-0">Toque em um dia do calendário para consultar as atividades.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% set ns = namespace(day_dict={}) %}
+    {% for week in cal.weeks %}
+        {% for cell in week %}
+            {% if cell.in_month %}
+                {% set _ = ns.day_dict.update({cell.date_iso: {'date_br': cell.date_br, 'events': cell.events, 'campaigns': cell.campaigns}}) %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+    <script id="calendarDaysJson" type="application/json">{{ ns.day_dict | tojson }}</script>
+
+    {% include "sanitary/_apply_modal.html" %}
+{% endif %}
+{% endblock %}

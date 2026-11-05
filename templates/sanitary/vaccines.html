@@ -22,7 +22,7 @@
             <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
             {% for sp_slug, sp_info in species_meta.items() %}
                 <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
-                    {{ sp_info.emoji }} {{ sp_info.plural }}
+                    {{ sp_info.plural }}
                 </option>
             {% endfor %}
         </select>
@@ -38,9 +38,9 @@
         <div class="card-agro p-4">
             <h5 class="fw-bold mb-3">
                 {% if editing_vaccine %}
-                    <i class="bi bi-pencil-square text-success me-1"></i> Editar Item Preventivo
+                     Editar Item Preventivo
                 {% else %}
-                    <i class="bi bi-plus-circle text-success me-1"></i> Cadastrar no Catálogo
+                     Cadastrar no Catálogo
                 {% endif %}
             </h5>
 
@@ -160,7 +160,7 @@
                                     <td>
                                         <div class="fw-bold">{{ v.commercial_name }}</div>
                                         <span class="{{ v.item_type_badge_class }} mt-1 d-inline-block">
-                                            <i class="bi {{ v.item_type_icon }} me-1"></i>{{ v.item_type_label }}
+                                            {{ v.item_type_label }}
                                         </span>
                                         {% if v.description %}
                                             <div class="small text-muted mt-1">{{ v.description }}</div>
@@ -169,7 +169,7 @@
                                     <td>
                                         {% if v.target_species in species_meta %}
                                             <span class="{{ species_meta[v.target_species].badge_class }}">
-                                                {{ species_meta[v.target_species].emoji }} {{ species_meta[v.target_species].plural }}
+                                                {{ species_meta[v.target_species].plural }}
                                             </span>
                                         {% else %}
                                             <span class="badge bg-light text-dark border">Todas as espécies</span>
@@ -194,6 +194,11 @@
                                             <form method="POST" action="{{ url_for('sanitary.vaccine_toggle', vaccine_id=v.id) }}">
                                                 <button type="submit" class="btn btn-sm btn-outline-secondary">
                                                     {% if v.is_active %}Inativar{% else %}Ativar{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('sanitary.delete_vaccine_route', vaccine_id=v.id) }}" onsubmit="return confirm('Excluir este item preventivo do catálogo?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    Excluir
                                                 </button>
                                             </form>
                                         </div>

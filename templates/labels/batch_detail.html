@@ -27,16 +27,16 @@
 
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ url_for('labels.export_pdf', batch_id=batch.id) }}" class="btn btn-agro px-3 py-2">
-            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Baixar PDF Pronto p/ Impressão
+             Baixar PDF Pronto p/ Impressão
         </a>
         <a href="{{ url_for('labels.export_pdf', batch_id=batch.id, inline='1') }}" target="_blank" class="btn btn-outline-agro px-3 py-2">
-            <i class="bi bi-box-arrow-up-right me-1"></i> Visualizar PDF
+             Visualizar PDF
         </a>
         <a href="{{ url_for('labels.print_sheet', batch_id=batch.id) }}" target="_blank" class="btn btn-olive px-3 py-2">
-            <i class="bi bi-printer-fill me-1"></i> Imprimir em Lote
+             Imprimir em Lote
         </a>
         <a href="{{ url_for('labels.generator') }}" class="btn btn-outline-secondary rounded-3 px-3 py-2">
-            <i class="bi bi-plus-lg me-1"></i> Novo Lote
+             Novo Lote
         </a>
     </div>
 </div>
@@ -60,7 +60,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div>
                     <h5 class="fw-bold mb-0">
-                        <i class="bi bi-grid-3x3-gap-fill text-success me-1"></i> Pré-visualização Real das Etiquetas Geradas
+                         Pré-visualização Real das Etiquetas Geradas
                     </h5>
                     <small class="text-muted">Todos os QR Codes abaixo são exclusivos e já estão gravados no Supabase</small>
                 </div>
@@ -82,7 +82,7 @@
         <div class="card-agro p-4">
             <div class="border-bottom pb-3 mb-3">
                 <h5 class="fw-bold mb-1">
-                    <i class="bi bi-rulers text-success me-1"></i> Ajustar Layout para Reimpressão
+                     Ajustar Layout para Reimpressão
                 </h5>
                 <small class="text-muted">
                     Trocou o modelo de folha adesiva? Ajuste as medidas em milímetros e salve para reimprimir este mesmo conjunto sem duplicar etiquetas.
@@ -96,7 +96,7 @@
 
                 <div class="d-grid mt-4">
                     <button type="submit" class="btn btn-outline-agro py-2">
-                        <i class="bi bi-check2-circle me-1"></i> Salvar Ajustes de Layout deste Conjunto
+                         Salvar Ajustes de Layout deste Conjunto
                     </button>
                 </div>
             </form>
@@ -109,7 +109,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
             <h5 class="fw-bold mb-0">
-                <i class="bi bi-tags-fill text-success me-1"></i> Etiquetas Individuais deste Conjunto ({{ batch.units | length }})
+                 Etiquetas Individuais deste Conjunto ({{ batch.units | length }})
             </h5>
             <small class="text-muted">Disponíveis para vínculo futuro no cadastro de bovinos, sem criar registros fantasma de animais</small>
         </div>
@@ -166,11 +166,11 @@
                         <td class="text-end">
                             <div class="d-inline-flex gap-1">
                                 <a href="{{ url_for('labels.download_unit_qr', unit_id=u.id) }}" class="btn btn-sm btn-outline-agro" title="Baixar PNG individual">
-                                    <i class="bi bi-download"></i> PNG
+                                     PNG
                                 </a>
                                 {% if u.status in ('available', 'assigned') %}
                                     <a href="{{ url_for('animal_new', tag_unit_id=u.id) }}" class="btn btn-sm btn-agro" title="Cadastrar bovino usando esta etiqueta">
-                                        <i class="bi bi-link-45deg"></i> Vincular Bovino
+                                         Vincular Bovino
                                     </a>
                                 {% endif %}
                             </div>

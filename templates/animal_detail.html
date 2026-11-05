@@ -11,14 +11,42 @@
 {% endblock %}
 
 {% block content %}
-{% if not animal and unlinked_tag %}
+{% if is_invalidated %}
+    <!-- Estado: QR Code ou Registro Inválido / Desativado -->
+    <div class="row justify-content-center py-4 no-print">
+        <div class="col-md-8 col-lg-6">
+            <div class="card-agro p-4 p-md-5 text-center border-danger-subtle">
+                <span class="badge bg-danger-subtle text-danger-emphasis px-3 py-2 fs-6 mb-3">
+                    QR Code / Registro Desativado ou Inválido
+                </span>
+                <h1 class="h4 fw-bold mb-2">Etiqueta ou Animal Inativado</h1>
+                <p class="text-muted mb-3">
+                    Este QR Code ou identificador foi <strong>desativado, excluído ou baixado</strong> da plataforma Animora e não possui mais registros operacionais ativos.
+                </p>
+                {% if invalidated_reason %}
+                    <div class="alert alert-light border small text-muted mb-4">
+                        <strong>Motivo registrado:</strong> {{ invalidated_reason }}
+                    </div>
+                {% endif %}
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                    <a href="{{ url_for('public_lookup') }}" class="btn btn-agro">
+                        Nova Consulta Pública
+                    </a>
+                    {% if is_property_authenticated %}
+                        <a href="{{ url_for('animals_list') }}" class="btn btn-outline-agro">
+                            Voltar ao Plantel
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% elif not animal and unlinked_tag %}
     <!-- Estado: Etiqueta física pré-impressa escaneada antes de ser vinculada a um animal -->
     <div class="row justify-content-center py-4 no-print">
         <div class="col-md-8 col-lg-6">
             <div class="card-agro p-4 p-md-5 text-center">
-                <div class="stat-icon stat-icon-pink mx-auto mb-3">
-                    <i class="bi bi-qr-code-scan"></i>
-                </div>
+                
                 <span class="{{ unlinked_tag.status_badge_class }} mb-2 d-inline-block">
                     {{ unlinked_tag.status_label }}
                 </span>
@@ -32,12 +60,12 @@
                 <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
                     {% if unlinked_tag.status in ('available', 'assigned') %}
                         <a href="{{ url_for('animal_new', tag_unit_id=unlinked_tag.id) }}" class="btn btn-agro">
-                            <i class="bi bi-plus-circle me-1"></i> Atribuir Animal a esta Etiqueta
+                             Atribuir Animal a esta Etiqueta
                         </a>
                     {% endif %}
                     {% if is_property_authenticated %}
                         <a href="{{ url_for('labels.history', q=unlinked_tag.tag_number) }}" class="btn btn-outline-agro">
-                            <i class="bi bi-tags me-1"></i> Ver Controle de Etiquetas
+                             Ver Controle de Etiquetas
                         </a>
                     {% else %}
                         <a href="{{ url_for('public_lookup') }}" class="btn btn-outline-agro">
@@ -53,9 +81,7 @@
     <div class="row justify-content-center py-4 no-print">
         <div class="col-md-8 col-lg-6">
             <div class="card-agro p-4 p-md-5 text-center">
-                <div class="stat-icon stat-icon-mustard mx-auto mb-3">
-                    <i class="bi bi-search"></i>
-                </div>
+                
                 <h1 class="h4 fw-bold mb-2">Registro de Animal Não Encontrado</h1>
                 <p class="text-muted mb-4">
                     Não localizamos nenhum animal associado a este identificador ou QR Code na plataforma Animora.
@@ -63,11 +89,11 @@
                 </p>
                 <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
                     <a href="{{ url_for('public_lookup') }}" class="btn btn-agro">
-                        <i class="bi bi-qr-code-scan me-1"></i> Nova Consulta QR
+                         Nova Consulta QR
                     </a>
                     {% if is_property_authenticated %}
                         <a href="{{ url_for('animals_list') }}" class="btn btn-outline-agro">
-                            <i class="bi bi-list-ul me-1"></i> Consultar Plantel
+                             Consultar Plantel
                         </a>
                     {% endif %}
                 </div>
@@ -94,17 +120,17 @@
                     {% if animal.name %}{{ animal.name }} &mdash; {% endif %}#{{ animal.ear_tag }}
                 </h1>
                 <span class="{{ animal.species_badge_class }}">
-                    {{ animal.species_emoji }} {{ animal.species_label }}
+                    {{ animal.species_label }}
                 </span>
                 {% if animal.sex == 'Macho' %}
-                    <span class="badge-sex-male"><i class="bi bi-gender-male me-1"></i>Macho</span>
+                    <span class="badge-sex-male">Macho</span>
                 {% else %}
-                    <span class="badge-sex-female"><i class="bi bi-gender-female me-1"></i>Fêmea</span>
+                    <span class="badge-sex-female">Fêmea</span>
                 {% endif %}
                 <span class="{{ animal.age_badge_class }}">{{ animal.age_category_name }}</span>
                 {% if animal.housing_display %}
                     <span class="badge bg-light text-dark border">
-                        <i class="bi bi-house-door me-1 text-fern"></i>{{ animal.housing_display }}
+                        {{ animal.housing_display }}
                     </span>
                 {% endif %}
             </div>
@@ -112,24 +138,27 @@
 
         <div class="d-flex flex-wrap gap-2">
             {% if is_property_authenticated %}
+                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAnimalModal">
+                    Excluir Animal
+                </button>
                 <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-outline-agro btn-sm">
-                    <i class="bi bi-card-heading me-1"></i> Placa de Baia / Ficha QR
+                     Placa de Baia / Ficha QR
                 </a>
                 {% if force_public_preview %}
                     <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="btn btn-agro btn-sm">
-                        <i class="bi bi-shield-check me-1"></i> Voltar à Visão Completa ({{ access_level | upper }})
+                         Voltar à Visão Completa ({{ access_level | upper }})
                     </a>
                 {% else %}
                     <a href="{{ url_for('animal_detail', token=animal.qr_code_token, public='1') }}" class="btn btn-outline-secondary btn-sm rounded-3">
-                        <i class="bi bi-eye me-1"></i> Pré-visualizar Modo Common
+                         Pré-visualizar Modo Common
                     </a>
                 {% endif %}
                 <a href="{{ url_for('animals_list') }}" class="btn btn-olive btn-sm px-3 py-2">
-                    <i class="bi bi-arrow-left me-1"></i> Plantel
+                     Plantel
                 </a>
             {% else %}
                 <a href="{{ url_for('public_lookup') }}" class="btn btn-olive btn-sm px-3 py-2">
-                    <i class="bi bi-search me-1"></i> Nova Consulta
+                     Nova Consulta
                 </a>
             {% endif %}
         </div>
@@ -141,16 +170,14 @@
             <div class="card-agro p-4 h-100">
                 <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="stat-icon stat-icon-pink">
-                            <i class="bi bi-clipboard2-data"></i>
-                        </span>
+                        
                         <div>
                             <h5 class="fw-bold mb-0">Identificação, Alojamento &amp; Origem</h5>
                             <small class="text-muted">Registrado em {{ animal.created_at | datetime_br }}</small>
                         </div>
                     </div>
                     <span class="badge bg-success-subtle text-success-emphasis">
-                        <i class="bi bi-patch-check-fill me-1"></i> Verificado Animora
+                         Verificado Animora
                     </span>
                 </div>
 
@@ -178,7 +205,7 @@
                         <div class="detail-field">
                             <div class="detail-field-label">Espécie, Raça &amp; Sexo</div>
                             <div class="detail-field-value">
-                                {{ animal.species_emoji }} {{ animal.species_label }} &bull; {{ animal.breed }}
+                                {{ animal.species_label }} &bull; {{ animal.breed }}
                                 <div class="small text-muted fw-normal">
                                     Sexo: {{ animal.sex }}
                                     {% if animal.coat_color %} &bull; Pelagem: {{ animal.coat_color }}{% endif %}
@@ -192,7 +219,7 @@
                             <div class="detail-field-label">Alojamento / Baia / Setor</div>
                             <div class="detail-field-value">
                                 {% if animal.housing_display %}
-                                    <i class="bi bi-house-door-fill text-fern me-1"></i>{{ animal.housing_display }}
+                                    {{ animal.housing_display }}
                                 {% else %}
                                     <span class="text-muted fw-normal">Pasto / Alojamento geral da propriedade</span>
                                 {% endif %}
@@ -209,7 +236,7 @@
                                     <span class="small text-muted fw-normal">({{ animal.property_location }})</span>
                                 {% endif %}
                                 <div class="small text-fern fw-semibold mt-1">
-                                    <i class="bi bi-geo-alt-fill me-1"></i>{{ animal.origin_label }}
+                                    {{ animal.origin_label }}
                                 </div>
                             </div>
                         </div>
@@ -300,38 +327,38 @@
                 <div class="d-grid gap-2">
                     {% if is_property_authenticated %}
                         <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-agro btn-sm py-2">
-                            <i class="bi bi-card-heading me-1"></i> Emitir Placa de Baia / Ficha QR
+                             Emitir Placa de Baia / Ficha QR
                         </a>
                         <div class="row g-2">
                             <div class="col-6">
                                 <button type="button" class="btn btn-outline-agro btn-sm w-100 py-2" data-bs-toggle="modal" data-bs-target="#qrPreviewModal">
-                                    <i class="bi bi-arrows-fullscreen me-1"></i> Ampliar QR
+                                     Ampliar QR
                                 </button>
                             </div>
                             <div class="col-6">
                                 <a href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}" class="btn btn-outline-agro btn-sm w-100 py-2">
-                                    <i class="bi bi-download me-1"></i> Baixar PNG
+                                     Baixar PNG
                                 </a>
                             </div>
                         </div>
                         <div class="row g-2">
                             <div class="col-6">
                                 <button type="button" id="printQrBtn" class="btn btn-olive btn-sm w-100 py-2">
-                                    <i class="bi bi-printer me-1"></i> Etiqueta Simples
+                                     Etiqueta Simples
                                 </button>
                             </div>
                             <div class="col-6">
                                 <button type="button" id="copyPublicUrlBtn" data-url="{{ public_url }}" class="btn btn-outline-secondary btn-sm rounded-3 fw-semibold w-100 py-2">
-                                    <i class="bi bi-link-45deg me-1"></i> Copiar Link
+                                     Copiar Link
                                 </button>
                             </div>
                         </div>
                     {% else %}
                         <button type="button" class="btn btn-outline-agro btn-sm py-2" data-bs-toggle="modal" data-bs-target="#qrPreviewModal">
-                            <i class="bi bi-arrows-fullscreen me-1"></i> Ampliar QR Code
+                             Ampliar QR Code
                         </button>
                         <button type="button" id="copyPublicUrlBtn" data-url="{{ public_url }}" class="btn btn-agro btn-sm py-2">
-                            <i class="bi bi-link-45deg me-1"></i> Copiar Link da Ficha Pública
+                             Copiar Link da Ficha Pública
                         </button>
                     {% endif %}
                 </div>
@@ -346,9 +373,7 @@
         <div class="card-agro p-4 no-print">
             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div class="d-flex align-items-start gap-3">
-                    <span class="stat-icon stat-icon-olive flex-shrink-0">
-                        <i class="bi bi-shield-lock"></i>
-                    </span>
+                    
                     <div>
                         <h5 class="fw-bold mb-1">Plano de Cocho, Manejo &amp; Prontuário Sanitário Restritos</h5>
                         <p class="text-muted small mb-0">
@@ -359,7 +384,7 @@
                 </div>
                 <div class="flex-shrink-0">
                     <a href="{{ url_for('operator_login', level='property', next=url_for('animal_detail', token=animal.qr_code_token)) }}" class="btn btn-agro">
-                        <i class="bi bi-unlock me-1"></i> Entrar como Property
+                         Entrar como Property
                     </a>
                 </div>
             </div>
@@ -368,7 +393,7 @@
         {% if ctx and ctx.migration_ready and not migration_004_ready %}
             <div class="alert alert-warning rounded-4 border-warning-subtle shadow-sm p-3 mb-4 no-print">
                 <div class="d-flex align-items-start gap-2">
-                    <i class="bi bi-database-up fs-5 text-warning-emphasis"></i>
+                    
                     <div class="small">
                         <strong>Atualização Multi-Espécie (Migração 004) Pendente no Supabase:</strong>
                         execute o script <code>database/migrations/004_multi_species_management.sql</code> no SQL Editor do Supabase para habilitar a gravação de <strong>Planos de Cocho</strong>, <strong>Rotinas de Manejo</strong> (casqueamento, tosquia, pesagem) e colunas multi-espécie.
@@ -385,9 +410,7 @@
                     <div>
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="stat-icon stat-icon-mustard">
-                                    <i class="bi bi-basket2-fill"></i>
-                                </span>
+                                
                                 <div>
                                     <h5 class="fw-bold mb-0">Plano de Cocho &amp; Arraçoamento</h5>
                                     <small class="text-muted">Visível apenas para equipe autenticada (Property / Admin)</small>
@@ -395,7 +418,7 @@
                             </div>
                             {% if ctx and ctx.migration_ready and migration_004_ready %}
                                 <button type="button" class="btn btn-sm btn-agro" data-bs-toggle="modal" data-bs-target="#feedingPlanModal">
-                                    <i class="bi bi-pencil-square me-1"></i> {{ "Editar Cocho" if feeding_plan else "Configurar Cocho" }}
+                                     {{ "Editar Cocho" if feeding_plan else "Configurar Cocho" }}
                                 </button>
                             {% endif %}
                         </div>
@@ -403,7 +426,7 @@
                         {% set sp_warn = species_meta.get(animal.species, {}).get('feeding_warning') %}
                         {% if sp_warn %}
                             <div class="alert {% if animal.species == 'ovino' %}alert-danger{% else %}alert-warning{% endif %} rounded-3 py-2 px-3 small mb-3">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ sp_warn }}
+                                 {{ sp_warn }}
                             </div>
                         {% endif %}
 
@@ -452,7 +475,7 @@
                             </div>
                         {% else %}
                             <div class="text-center py-4 text-muted small">
-                                <i class="bi bi-basket2 fs-3 d-block mb-2 opacity-50"></i>
+                                
                                 Nenhum plano individual de cocho/arraçoamento configurado para este animal.
                             </div>
                         {% endif %}
@@ -479,9 +502,7 @@
                     <div>
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="stat-icon stat-icon-olive">
-                                    <i class="bi bi-tools"></i>
-                                </span>
+                                
                                 <div>
                                     <h5 class="fw-bold mb-0">Rotinas de Manejo ({{ animal.species_label }})</h5>
                                     <small class="text-muted">
@@ -497,7 +518,7 @@
                             </div>
                             {% if ctx and ctx.migration_ready and migration_004_ready %}
                                 <button type="button" class="btn btn-sm btn-olive" data-bs-toggle="modal" data-bs-target="#newManagementModal">
-                                    <i class="bi bi-plus-circle me-1"></i> Registrar Manejo
+                                     Registrar Manejo
                                 </button>
                             {% endif %}
                         </div>
@@ -508,7 +529,7 @@
                                     <div class="p-2 px-3 rounded-3 border bg-light-subtle">
                                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
                                             <span class="{{ mr.routine_badge_class }}">
-                                                <i class="bi {{ mr.routine_icon }} me-1"></i>{{ mr.routine_short_label }}
+                                                {{ mr.routine_short_label }}
                                             </span>
                                             <span class="{{ mr.due_badge_class }}">{{ mr.due_status_label }}</span>
                                         </div>
@@ -530,7 +551,7 @@
                             </div>
                         {% else %}
                             <div class="text-center py-4 text-muted small">
-                                <i class="bi bi-clipboard2-check fs-3 d-block mb-2 opacity-50"></i>
+                                
                                 Nenhuma rotina de manejo registrada para este animal ainda.
                             </div>
                         {% endif %}
@@ -550,9 +571,7 @@
         <section class="card-agro p-4 p-md-4 mb-4 no-print" id="carteira-sanitaria">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 border-bottom pb-3 mb-4">
                 <div class="d-flex align-items-center gap-3">
-                    <span class="stat-icon stat-icon-green">
-                        <i class="bi bi-journal-medical"></i>
-                    </span>
+                    
                     <div>
                         <h4 class="h5 fw-bold mb-0">Carteira Sanitária Individual ({{ animal.species_label }})</h4>
                         <small class="text-muted">Vacinas, vermífugos, exames preventivos (AIE/Mormo/OPG), ocorrências e linha do tempo</small>
@@ -571,7 +590,7 @@
                             data-dose-number="1"
                             data-historical="0"
                         >
-                            <i class="bi bi-eyedropper me-1"></i> Vacina / Vermífugo / Exame
+                             Vacina / Vermífugo / Exame
                         </button>
 
                         <button
@@ -584,15 +603,15 @@
                             data-dose-number="1"
                             data-historical="1"
                         >
-                            <i class="bi bi-clock-history me-1"></i> Informar Histórico Anterior
+                             Informar Histórico Anterior
                         </button>
 
                         <button type="button" class="btn btn-sm btn-olive" data-bs-toggle="modal" data-bs-target="#newHealthRecordModal">
-                            <i class="bi bi-plus-circle me-1"></i> Ocorrência / Tratamento
+                             Ocorrência / Tratamento
                         </button>
 
                         <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" data-bs-toggle="modal" data-bs-target="#editSanitaryProfileModal">
-                            <i class="bi bi-sliders me-1"></i> Perfil / Baia / Protocolo
+                             Perfil / Baia / Protocolo
                         </button>
                     </div>
                 {% endif %}
@@ -635,22 +654,22 @@
                 <ul class="nav nav-pills gap-2 mb-4" id="sanitaryCardTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabTimeline" type="button" role="tab">
-                            <i class="bi bi-clock-history me-1"></i> Linha do Tempo ({{ sanitary_card.timeline | length }})
+                             Linha do Tempo ({{ sanitary_card.timeline | length }})
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabPending" type="button" role="tab">
-                            <i class="bi bi-calendar-check me-1"></i> Próximas &amp; Atrasadas ({{ (sanitary_card.overdue_schedules | length) + (sanitary_card.pending_schedules | length) + (sanitary_card.upcoming_schedules | length) }})
+                             Próximas &amp; Atrasadas ({{ (sanitary_card.overdue_schedules | length) + (sanitary_card.pending_schedules | length) + (sanitary_card.upcoming_schedules | length) }})
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabApplied" type="button" role="tab">
-                            <i class="bi bi-eyedropper me-1"></i> Vacinas, Vermífugos &amp; Exames ({{ sanitary_card.applied_records | length }})
+                             Vacinas, Vermífugos &amp; Exames ({{ sanitary_card.applied_records | length }})
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link rounded-pill px-3 py-1 fw-semibold small" data-bs-toggle="pill" data-bs-target="#tabClinical" type="button" role="tab">
-                            <i class="bi bi-clipboard2-pulse me-1"></i> Tratamentos &amp; Ocorrências ({{ (sanitary_card.treatments | length) + (sanitary_card.occurrences | length) + (sanitary_card.vet_notes | length) }})
+                             Tratamentos &amp; Ocorrências ({{ (sanitary_card.treatments | length) + (sanitary_card.occurrences | length) + (sanitary_card.vet_notes | length) }})
                         </button>
                     </li>
                 </ul>
@@ -663,7 +682,7 @@
                                 {% for item in sanitary_card.timeline %}
                                     <div class="timeline-item">
                                         <span class="timeline-dot">
-                                            <i class="bi {{ item.icon }}"></i>
+                                            
                                         </span>
                                         <div class="timeline-card">
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
@@ -695,7 +714,7 @@
                                                         data-route="{{ item.schedule.vaccines.administration_route if item.schedule.vaccines else '' }}"
                                                         data-unit="{{ item.schedule.vaccines.dosage_unit if item.schedule.vaccines else 'mL' }}"
                                                     >
-                                                        <i class="bi bi-check2-circle me-1"></i> Confirmar Realização
+                                                         Confirmar Realização
                                                     </button>
                                                     <button
                                                         type="button"
@@ -779,7 +798,7 @@
                                                                 data-action-url="{{ url_for('sanitary.update_schedule_status', schedule_id=s.id) }}"
                                                                 data-schedule-desc="{{ s.vaccines.commercial_name if s.vaccines else 'Preventivo' }} ({{ s.dose_number }}ª dose)"
                                                             >
-                                                                <i class="bi bi-three-dots"></i>
+                                                                
                                                             </button>
                                                         </div>
                                                     {% else %}
@@ -829,7 +848,7 @@
                                                     <div>{{ r.dosage }} {{ r.dosage_unit }} &bull; {{ r.administration_route }}</div>
                                                     {% if r.exam_result %}
                                                         <div class="fw-semibold text-fern mt-1">
-                                                            <i class="bi bi-clipboard2-check me-1"></i>Laudo/Resultado: {{ r.exam_result }}
+                                                            Laudo/Resultado: {{ r.exam_result }}
                                                         </div>
                                                     {% endif %}
                                                 </td>
@@ -891,7 +910,7 @@
                             <div class="modal-header border-bottom pb-2">
                                 <div>
                                     <h5 class="modal-title fw-bold">
-                                        <i class="bi bi-basket2-fill text-warning me-1"></i> Plano de Cocho &amp; Arraçoamento
+                                         Plano de Cocho &amp; Arraçoamento
                                     </h5>
                                     <span class="badge-ear-tag">#{{ animal.ear_tag }} &bull; {{ animal.species_label }}</span>
                                 </div>
@@ -901,7 +920,7 @@
                                 {% set sp_warn_modal = species_meta.get(animal.species, {}).get('feeding_warning') %}
                                 {% if sp_warn_modal %}
                                     <div class="alert {% if animal.species == 'ovino' %}alert-danger{% else %}alert-warning{% endif %} rounded-3 py-2 px-3 small mb-3">
-                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ sp_warn_modal }}
+                                         {{ sp_warn_modal }}
                                     </div>
                                 {% endif %}
                                 <div class="row g-3">
@@ -956,7 +975,7 @@
                             <div class="modal-header border-bottom pb-2">
                                 <div>
                                     <h5 class="modal-title fw-bold">Registrar Rotina de Manejo</h5>
-                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_emoji }} {{ animal.species_label }} &bull; #{{ animal.ear_tag }}</span>
+                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_label }} &bull; #{{ animal.ear_tag }}</span>
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                             </div>
@@ -1109,7 +1128,7 @@
                                         <select class="form-select" name="species">
                                             {% for sp_slug, sp_info in species_meta.items() %}
                                                 <option value="{{ sp_slug }}" {% if animal.species == sp_slug %}selected{% endif %}>
-                                                    {{ sp_info.emoji }} {{ sp_info.label }}
+                                                    {{ sp_info.label }}
                                                 </option>
                                             {% endfor %}
                                         </select>
@@ -1215,10 +1234,10 @@
                 <div class="modal-footer border-top-0 pt-0 justify-content-center">
                     {% if is_property_authenticated %}
                         <a href="{{ url_for('animal_stall_card', token=animal.qr_code_token) }}" class="btn btn-outline-agro">
-                            <i class="bi bi-card-heading me-1"></i> Placa de Baia
+                             Placa de Baia
                         </a>
                         <a href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}" class="btn btn-agro">
-                            <i class="bi bi-download me-1"></i> Baixar PNG
+                             Baixar PNG
                         </a>
                     {% endif %}
                     <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">
@@ -1228,6 +1247,38 @@
             </div>
         </div>
     </div>
+
+    {% if animal and is_property_authenticated %}
+    <!-- Modal de Exclusão Unitária do Animal com Invalidação de QR Code -->
+    <div class="modal fade" id="deleteAnimalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-danger">
+                <form method="POST" action="{{ url_for('animal_delete', animal_id=animal.id) }}">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold">Excluir Animal #{{ animal.ear_tag }}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-dark">
+                            Tem certeza que deseja excluir permanentemente o animal <strong>#{{ animal.ear_tag }} {% if animal.name %}({{ animal.name }}){% endif %}</strong>?
+                        </p>
+                        <div class="alert alert-danger small mb-0">
+                            <strong>Atenção:</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>O prontuário sanitário, registros de manejo e dietas de cocho deste animal serão permanentemente excluídos.</li>
+                                <li><strong>O QR Code #{{ animal.ear_tag }} será permanentemente invalidado</strong>. Qualquer pessoa que escanear a etiqueta verá que o registro foi desativado/excluído.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger fw-bold">Excluir Animal &amp; Invalidar QR</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Etiqueta exclusiva para impressão limpa (@media print) -->
     <div class="print-only-label">

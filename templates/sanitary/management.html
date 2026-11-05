@@ -24,7 +24,7 @@
                     <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
                     {% for sp_slug, sp_info in species_meta.items() %}
                         <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
-                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                            {{ sp_info.plural }}
                         </option>
                     {% endfor %}
                 </select>
@@ -33,7 +33,7 @@
 
         {% if mgmt and mgmt.migration_004_ready and animals %}
             <button type="button" class="btn btn-sm btn-agro" data-bs-toggle="modal" data-bs-target="#registerManagementGlobalModal">
-                <i class="bi bi-plus-lg me-1"></i> Registrar Manejo
+                 Registrar Manejo
             </button>
         {% endif %}
     </div>
@@ -45,7 +45,7 @@
     {% if mgmt and not mgmt.migration_004_ready %}
         <div class="alert alert-warning rounded-4 border-warning-subtle shadow-sm p-4 mb-4">
             <div class="d-flex align-items-start gap-3">
-                <i class="bi bi-database-up fs-3 text-warning-emphasis"></i>
+                
                 <div>
                     <h5 class="fw-bold mb-1">Migração Multi-Espécie (004) Pendente no Supabase</h5>
                     <p class="small mb-2">
@@ -65,7 +65,7 @@
                         <div class="kpi-mini-value mt-1 {% if mgmt.overdue_alerts %}text-danger{% endif %}">{{ mgmt.overdue_alerts | length }}</div>
                         <div class="small text-muted">Cascos, ferraduras, tosquia ou pesagem</div>
                     </div>
-                    <span class="stat-icon stat-icon-pink"><i class="bi bi-exclamation-octagon"></i></span>
+                    
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -75,7 +75,7 @@
                         <div class="kpi-mini-value mt-1">{{ mgmt.upcoming_alerts | length }}</div>
                         <div class="small text-muted">Retornos agendados no período</div>
                     </div>
-                    <span class="stat-icon stat-icon-mustard"><i class="bi bi-calendar2-event"></i></span>
+                    
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -85,7 +85,7 @@
                         <div class="kpi-mini-value mt-1 text-fern">{{ mgmt.recent_records | length }}</div>
                         <div class="small text-muted">Últimos manejos lançados</div>
                     </div>
-                    <span class="stat-icon stat-icon-green"><i class="bi bi-tools"></i></span>
+                    
                 </div>
             </div>
         </div>
@@ -95,7 +95,7 @@
             <div class="col-lg-5">
                 <div class="card-agro p-4 h-100">
                     <h5 class="fw-bold mb-3">
-                        <i class="bi bi-bell text-brand me-1"></i> Retornos Pendentes &amp; Próximos
+                         Retornos Pendentes &amp; Próximos
                     </h5>
 
                     {% set combined_alerts = mgmt.overdue_alerts + mgmt.upcoming_alerts %}
@@ -105,7 +105,7 @@
                                 <div class="p-3 rounded-3 border bg-light-subtle">
                                     <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
                                         <span class="{{ al.routine_badge_class }}">
-                                            <i class="bi {{ al.routine_icon }} me-1"></i>{{ al.routine_short_label }}
+                                            {{ al.routine_short_label }}
                                         </span>
                                         <span class="{{ al.due_badge_class }}">{{ al.due_status_label }}</span>
                                     </div>
@@ -115,7 +115,7 @@
                                                 #{{ al.animal.ear_tag }}{% if al.animal.name %} &mdash; {{ al.animal.name }}{% endif %}
                                             </a>
                                             <div class="small text-muted">
-                                                {{ al.animal.species_emoji }} {{ al.animal.species_label }}
+                                                {{ al.animal.species_label }}
                                                 {% if al.animal.housing_display %} &bull; {{ al.animal.housing_display }}{% endif %}
                                             </div>
                                         </div>
@@ -129,7 +129,7 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5 text-muted small">
-                            <i class="bi bi-check2-circle fs-2 d-block mb-2 text-success"></i>
+                            
                             Nenhum retorno de manejo atrasado ou pendente nos próximos 30 dias.
                         </div>
                     {% endif %}
@@ -141,7 +141,7 @@
                 <div class="card-agro p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0">
-                            <i class="bi bi-clock-history text-fern me-1"></i> Últimos Manejos Realizados
+                             Últimos Manejos Realizados
                         </h5>
                     </div>
 
@@ -164,12 +164,12 @@
                                                     <span class="badge-ear-tag">#{{ r.animal.ear_tag }}</span>
                                                 </a>
                                                 <div class="small text-muted mt-1">
-                                                    {{ r.animal.species_emoji }} {{ r.animal.name or r.animal.breed }}
+                                                    {{ r.animal.name or r.animal.breed }}
                                                 </div>
                                             </td>
                                             <td>
                                                 <span class="{{ r.routine_badge_class }}">
-                                                    <i class="bi {{ r.routine_icon }} me-1"></i>{{ r.routine_short_label }}
+                                                    {{ r.routine_short_label }}
                                                 </span>
                                                 {% if r.specialist_or_responsible %}
                                                     <div class="small text-muted mt-1">{{ r.specialist_or_responsible }}</div>
@@ -198,7 +198,7 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5 text-muted small">
-                            <i class="bi bi-tools fs-2 d-block mb-2 opacity-50"></i>
+                            
                             Nenhum manejo registrado ainda para o filtro selecionado.
                         </div>
                     {% endif %}
@@ -214,7 +214,7 @@
                         <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                         <div class="modal-header border-bottom pb-2">
                             <h5 class="modal-title fw-bold">
-                                <i class="bi bi-tools text-fern me-1"></i> Registrar Rotina de Manejo no Plantel
+                                 Registrar Rotina de Manejo no Plantel
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                         </div>
@@ -226,7 +226,7 @@
                                         <option value="">Selecione o animal...</option>
                                         {% for a in animals %}
                                             <option value="{{ a.id }}" data-species="{{ a.species }}">
-                                                {{ a.species_emoji }} #{{ a.ear_tag }}{% if a.name %} — {{ a.name }}{% endif %} ({{ a.species_label }})
+                                                #{{ a.ear_tag }}{% if a.name %} — {{ a.name }}{% endif %} ({{ a.species_label }})
                                             </option>
                                         {% endfor %}
                                     </select>

@@ -45,7 +45,7 @@ def is_admin_authenticated() -> bool:
 is_operator_authenticated = is_property_authenticated
 
 
-def get_current_operator() -> dict[str, str]:
+def get_current_operator() -> dict[str, str | None]:
     """Retorna os dados do usuário autenticado (ou visitante Common) na sessão."""
     level = get_access_level()
     default_role = "admin" if level == "admin" else "produtor"
@@ -61,7 +61,27 @@ def get_current_operator() -> dict[str, str]:
         "access_level_label": ACCESS_LEVEL_LABELS.get(level, "Common"),
         "role": role,
         "role_label": ROLE_LABELS.get(role, "Gestão"),
+        "property_id": session.get("property_id"),
+        "property_name": session.get("property_name"),
     }
+
+
+def get_assigned_property_id() -> str | None:
+    """Retorna o ID da fazenda vinculada ao perfil de acesso atual (se houver)."""
+    return session.get("property_id")
+
+
+def get_active_filter_property_id(requested_property_id: str | None = None) -> str | None:
+    """
+    Retorna o ID da propriedade a ser filtrado nas consultas:
+    - Se o usuário for Property com fazenda vinculada: SEMPRE retorna a fazenda dele (isolamento total).
+    - Se o usuário for Admin: pode filtrar por qualquer fazenda ou None (todas).
+    """
+    assigned = session.get("property_id")
+    if not is_admin_authenticated() and assigned:
+        return str(assigned)
+    clean_req = (requested_property_id or "").strip()
+    return clean_req if clean_req else None
 
 
 def _resolve_supabase_user_access_level(client: Any, user: Any) -> str:
@@ -144,7 +164,23 @@ def authenticate_operator(
         except Exception:
             return False, "E-mail ou senha inválidos no Supabase Auth."
 
-    # Modalidade 2: Chaves separadas por nível no servidor (.env)
+    # Modalidade 2: Perfis de Acesso Vinculados a Fazendas (Criados pelo Admin)
+    if target_level == "property":
+        try:
+            from services.farm_service import find_access_profile_by_pin
+            farm_profile = find_access_profile_by_pin(clean_pin)
+            if farm_profile:
+                session["operator_authenticated"] = True
+                session["access_level"] = "property"
+                session["operator_name"] = clean_name if operator_name.strip() else farm_profile["name"]
+                session["operator_role"] = farm_profile.get("role") or "produtor"
+                session["property_id"] = str(farm_profile["property_id"])
+                session["property_name"] = farm_profile.get("property_name") or "Fazenda Vinculada"
+                return True, None
+        except Exception:
+            pass
+
+    # Modalidade 3: Chaves separadas por nível no servidor (.env)
     pin_bytes = clean_pin.encode("utf-8")
     admin_pin_bytes = Config.ADMIN_ACCESS_PIN.encode("utf-8")
     prop_pin_bytes = Config.PROPERTY_ACCESS_PIN.encode("utf-8")
@@ -158,15 +194,19 @@ def authenticate_operator(
             session["access_level"] = "admin"
             session["operator_name"] = clean_name
             session["operator_role"] = "admin"
+            session.pop("property_id", None)
+            session.pop("property_name", None)
             return True, None
         return False, "Chave de acesso Admin incorreta."
 
-    # Nível Property aceita a chave Property (ou a chave Admin)
+    # Nível Property aceita a chave Property mestra (ou a chave Admin)
     if is_prop_match or is_admin_match:
         session["operator_authenticated"] = True
         session["access_level"] = "property" if is_prop_match and not is_admin_match else target_level
         session["operator_name"] = clean_name
         session["operator_role"] = clean_role
+        session.pop("property_id", None)
+        session.pop("property_name", None)
         return True, None
 
     return False, "Chave de acesso Property incorreta. Verifique o código informado."
@@ -180,6 +220,8 @@ def logout_operator() -> None:
         "operator_name",
         "operator_role",
         "supabase_user_id",
+        "property_id",
+        "property_name",
     ):
         session.pop(key, None)
 

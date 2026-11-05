@@ -1,7 +1,24 @@
 from datetime import date, datetime
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
-from services.auth_service import get_current_operator, operator_required
+from services.auth_service import (
+    admin_required,
+    get_current_operator,
+    is_admin_authenticated,
+    operator_required,
+)
+from services.farm_service import (
+    create_farm_access_profile,
+    delete_entire_farm,
+    delete_farm_access_profile,
+    delete_farm_operational_data,
+    delete_single_campaign,
+    delete_single_lot,
+    delete_single_vaccine,
+    list_all_farm_access_profiles,
+    list_farms_with_stats,
+    toggle_farm_access_profile,
+)
 from services.classification_service import (
     AGE_CATEGORY_LABELS,
     enrich_animals_list,
@@ -659,13 +676,15 @@ def save_animal_feeding_plan():
 
 
 # ----------------------------------------------------------------------------
-# 7. Propriedades e Lotes Auxiliares
+# 7. Propriedades e Lotes Auxiliares & Gestão de Acessos por Fazenda (Admin)
 # ----------------------------------------------------------------------------
 @sanitary_bp.route("/propriedades", methods=["GET", "POST"])
 @operator_required
 def properties_lots_view():
     try:
         ctx = get_sanitary_context()
+        is_admin = is_admin_authenticated()
+
         if request.method == "POST":
             entity = request.form.get("entity_type", "property")
             try:
@@ -673,19 +692,154 @@ def properties_lots_view():
                     created = create_lot(ctx["organization_id"], request.form)
                     flash(f"Lote '{created['name']}' cadastrado com sucesso!", "success")
                 else:
+                    if not is_admin:
+                        flash("Apenas o perfil de Administrador tem autorização para cadastrar novas fazendas.", "danger")
+                        return redirect(url_for("sanitary.properties_lots_view"))
                     created = create_property(ctx["organization_id"], request.form)
-                    flash(f"Propriedade '{created['name']}' cadastrada com sucesso!", "success")
+                    flash(f"Fazenda '{created['name']}' cadastrada com sucesso!", "success")
                 return redirect(url_for("sanitary.properties_lots_view"))
             except SupabaseServiceError as exc:
                 flash(str(exc), "danger")
 
-        return render_template("sanitary/properties_lots.html", ctx=ctx)
+        farms_with_stats = []
+        access_profiles = []
+        if is_admin:
+            try:
+                farms_with_stats = list_farms_with_stats(ctx["organization_id"])
+                access_profiles = list_all_farm_access_profiles(ctx["organization_id"])
+            except Exception:
+                farms_with_stats = []
+                access_profiles = []
+
+        return render_template(
+            "sanitary/properties_lots.html",
+            ctx=ctx,
+            farms=farms_with_stats,
+            access_profiles=access_profiles,
+            is_admin=is_admin,
+        )
     except MigrationRequiredError as exc:
         flash(str(exc), "warning")
         return redirect(url_for("sanitary.dashboard"))
     except SupabaseServiceError as exc:
         flash(str(exc), "danger")
         return redirect(url_for("sanitary.dashboard"))
+
+
+@sanitary_bp.route("/propriedades/<string:property_id>/acessos", methods=["POST"])
+@admin_required
+def create_property_access(property_id: str):
+    """Cria um perfil de acesso exclusivo vinculado a uma fazenda (Admin Only)."""
+    try:
+        ctx = get_sanitary_context()
+        profile = create_farm_access_profile(ctx["organization_id"], property_id, request.form)
+        flash(
+            f"Acesso '{profile['name']}' ({profile['role']}) criado com sucesso para esta fazenda! Chave/PIN: {profile['access_pin']}",
+            "success",
+        )
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/acessos/<string:profile_id>/status", methods=["POST"])
+@admin_required
+def toggle_access_status(profile_id: str):
+    """Ativa ou desativa um perfil de acesso vinculado (Admin Only)."""
+    try:
+        updated = toggle_farm_access_profile(profile_id)
+        st = "ativado" if updated.get("is_active") else "desativado"
+        flash(f"Perfil de acesso {st} com sucesso!", "info")
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/acessos/<string:profile_id>/excluir", methods=["POST"])
+@admin_required
+def delete_access(profile_id: str):
+    """Exclui permanentemente um perfil de acesso vinculado (Admin Only)."""
+    try:
+        delete_farm_access_profile(profile_id)
+        flash("Perfil de acesso excluído com sucesso!", "success")
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/propriedades/<string:property_id>/limpar-dados", methods=["POST"])
+@admin_required
+def wipe_property_data(property_id: str):
+    """
+    Exclui todos os dados operacionais da fazenda (animais, lotes, agendamentos, manejos),
+    invalidando permanentemente todos os QR codes correspondentes (Admin Only).
+    """
+    try:
+        ctx = get_sanitary_context()
+        res = delete_farm_operational_data(property_id, ctx["organization_id"])
+        flash(
+            f"Dados da fazenda limpos com sucesso! {res['deleted_animals']} animais excluídos, "
+            f"{res['invalidated_qr_tokens']} QR Codes invalidados e {res['deleted_lots']} lotes removidos.",
+            "warning",
+        )
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/propriedades/<string:property_id>/excluir", methods=["POST"])
+@admin_required
+def delete_property_route(property_id: str):
+    """
+    Exclui a fazenda inteira, limpando dados e invalidando todos os QR codes vinculados (Admin Only).
+    """
+    try:
+        ctx = get_sanitary_context()
+        res = delete_entire_farm(property_id, ctx["organization_id"])
+        flash(
+            f"Fazenda excluída com sucesso! {res['deleted_animals']} animais excluídos e "
+            f"{res['invalidated_qr_tokens']} QR Codes foram invalidados permanentemente.",
+            "warning",
+        )
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/lotes/<string:lot_id>/excluir", methods=["POST"])
+@operator_required
+def delete_lot_route(lot_id: str):
+    """Exclusão unitária de lote (desvincula animais)."""
+    try:
+        delete_single_lot(lot_id)
+        flash("Lote excluído com sucesso!", "success")
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.properties_lots_view"))
+
+
+@sanitary_bp.route("/cartelas/<string:campaign_id>/excluir", methods=["POST"])
+@operator_required
+def delete_campaign_route(campaign_id: str):
+    """Exclusão unitária de cartela de campanha sanitária."""
+    try:
+        delete_single_campaign(campaign_id)
+        flash("Cartela de campanha excluída com sucesso!", "success")
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.campaigns_list"))
+
+
+@sanitary_bp.route("/vacinas/<string:vaccine_id>/excluir", methods=["POST"])
+@operator_required
+def delete_vaccine_route(vaccine_id: str):
+    """Exclusão unitária de item do catálogo preventivo."""
+    try:
+        delete_single_vaccine(vaccine_id)
+        flash("Item preventivo excluído com sucesso!", "success")
+    except SupabaseServiceError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("sanitary.vaccines_list"))
 
 
 # ----------------------------------------------------------------------------

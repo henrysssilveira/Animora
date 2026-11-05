@@ -7,9 +7,7 @@
     <div class="col-md-9 col-lg-6">
         <div class="card-agro p-4 p-md-5">
             <div class="text-center mb-4">
-                <div class="stat-icon stat-icon-pink mx-auto mb-3">
-                    <i class="bi bi-shield-lock-fill"></i>
-                </div>
+                
                 <h1 class="h4 fw-bold mb-1">Acesso à Plataforma Animora</h1>
                 <p class="text-muted small mb-0">
                     Visitantes <strong>Common</strong> não precisam de login para consultar etiquetas QR.
@@ -35,7 +33,7 @@
                         <label class="access-level-card d-block" for="levelProperty">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <span class="badge-level-property">Property</span>
-                                <i class="bi bi-heart-pulse text-fern"></i>
+                                
                             </div>
                             <div class="fw-bold small">Propriedade &amp; Vacinação</div>
                             <div class="text-muted" style="font-size: 0.78rem;">
@@ -56,7 +54,7 @@
                         <label class="access-level-card d-block" for="levelAdmin">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <span class="badge-level-admin">Admin</span>
-                                <i class="bi bi-qr-code-scan text-brand"></i>
+                                
                             </div>
                             <div class="fw-bold small">Administração &amp; QR Codes</div>
                             <div class="text-muted" style="font-size: 0.78rem;">
@@ -68,7 +66,7 @@
 
                 {% if show_property_dev_hint or show_admin_dev_hint %}
                     <div class="alert alert-warning rounded-3 py-2 px-3 small mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i>
+                        
                         <strong>Ambiente de desenvolvimento (.env):</strong>
                         {% if show_property_dev_hint %}
                             <div>Chave <strong>Property</strong> padrão: <code>{{ default_property_pin }}</code> (<code>ANIMORA_PROPERTY_PIN</code>)</div>
@@ -135,7 +133,7 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-agro py-2">
-                        <i class="bi bi-unlock-fill me-1"></i> Entrar na Plataforma
+                         Entrar na Plataforma
                     </button>
                     <a href="{{ url_for('public_lookup') }}" class="btn btn-outline-secondary rounded-3">
                         Continuar como Common (Consulta Pública)

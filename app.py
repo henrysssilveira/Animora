@@ -11,12 +11,18 @@ from services.auth_service import (
     ROLE_LABELS,
     authenticate_operator,
     get_access_level,
+    get_active_filter_property_id,
+    get_assigned_property_id,
     get_current_operator,
     is_admin_authenticated,
     is_operator_authenticated,
     is_property_authenticated,
     logout_operator,
     property_required,
+)
+from services.farm_service import (
+    delete_single_animal,
+    is_qr_token_invalidated,
 )
 from services.classification_service import (
     AGE_CATEGORY_LABELS,
@@ -371,9 +377,11 @@ def create_app() -> Flask:
         animals: list[dict] = []
         db_error: str | None = None
         ctx = get_sanitary_context_safe()
+        assigned_prop = get_assigned_property_id()
+        filter_prop = assigned_prop if (assigned_prop and not is_admin_authenticated()) else None
 
         try:
-            raw_animals = list_animals()
+            raw_animals = list_animals(property_id=filter_prop)
             animals = enrich_animals_list(raw_animals, brackets=ctx["age_brackets"])
         except SupabaseServiceError as exc:
             db_error = str(exc)
@@ -444,7 +452,7 @@ def create_app() -> Flask:
 
         selected_species = request.args.get("species", "todas").strip().lower()
         selected_age = request.args.get("age_category", "todas").strip()
-        selected_property = request.args.get("property_id", "").strip()
+        selected_property = get_active_filter_property_id(request.args.get("property_id", ""))
         search_q = request.args.get("q", "").strip()
 
         try:
@@ -499,9 +507,11 @@ def create_app() -> Flask:
         - Usuários Admin podem tanto vincular uma etiqueta pré-criada quanto gerar um QR Code avulso.
         """
         ctx = get_sanitary_context_safe()
-        default_prop = ctx["properties"][0]["id"] if ctx.get("properties") else ""
+        assigned_prop = get_assigned_property_id()
+        is_admin = is_admin_authenticated()
+        default_prop = assigned_prop if (assigned_prop and not is_admin) else (ctx["properties"][0]["id"] if ctx.get("properties") else "")
         available_tags = list_available_tag_units_safe(ctx.get("organization_id"))
-        can_create_adhoc_qr = is_admin_authenticated()
+        can_create_adhoc_qr = is_admin
 
         preset_tag_id = request.args.get("tag_unit_id", "").strip()
         preset_ear_tag = ""
@@ -540,6 +550,8 @@ def create_app() -> Flask:
 
         if request.method == "POST":
             form_data = {key: request.form.get(key, "") for key in form_data}
+            if assigned_prop and not is_admin:
+                form_data["property_id"] = assigned_prop
 
             linked_tag: dict | None = None
             chosen_tag_id = form_data.get("tag_unit_id", "").strip()
@@ -558,6 +570,8 @@ def create_app() -> Flask:
                     form_data["tag_unit_id"] = linked_tag["id"]
 
             cleaned_data, validation_errors = validate_animal_form(form_data, ctx)
+            if assigned_prop and not is_admin:
+                cleaned_data["property_id"] = assigned_prop
 
             if not can_create_adhoc_qr and not linked_tag:
                 validation_errors.insert(
@@ -683,7 +697,19 @@ def create_app() -> Flask:
         Ficha Individual e Carteira Sanitária do animal (acessada via QR Code ou busca):
         - Common (ou ?public=1): vê apenas dados públicos (de onde o animal veio, nome e informações principais).
         - Property / Admin: vê também a Carteira Sanitária completa, lotes e observações privadas.
+        - Se o QR Code ou animal foi excluído/desativado, exibe aviso de QR Code Inválido.
         """
+        is_invalid, invalid_reason = is_qr_token_invalidated(token)
+        if is_invalid:
+            return render_template(
+                "animal_detail.html",
+                animal=None,
+                unlinked_tag=None,
+                is_invalidated=True,
+                invalidated_reason=invalid_reason,
+                db_error=None,
+            ), 410
+
         db_error: str | None = None
         animal: dict | None = None
         ctx = get_sanitary_context_safe()
@@ -691,6 +717,18 @@ def create_app() -> Flask:
         try:
             raw_animal = get_animal_by_token_or_id(token)
             if raw_animal:
+                anim_qr = raw_animal.get("qr_code_token")
+                if anim_qr and anim_qr != token:
+                    is_inv_anim, reason_anim = is_qr_token_invalidated(anim_qr)
+                    if is_inv_anim:
+                        return render_template(
+                            "animal_detail.html",
+                            animal=None,
+                            unlinked_tag=None,
+                            is_invalidated=True,
+                            invalidated_reason=reason_anim,
+                            db_error=None,
+                        ), 410
                 animal = enrich_animal_with_age(raw_animal, brackets=ctx["age_brackets"])
         except SupabaseServiceError as exc:
             db_error = str(exc)
@@ -705,16 +743,27 @@ def create_app() -> Flask:
         if not animal:
             unlinked_tag = get_tag_unit_by_token_or_id_safe(token)
             if unlinked_tag:
+                if unlinked_tag.get("status") == "retired":
+                    return render_template(
+                        "animal_detail.html",
+                        animal=None,
+                        unlinked_tag=None,
+                        is_invalidated=True,
+                        invalidated_reason=unlinked_tag.get("notes") or "Etiqueta inativada ou desativada.",
+                        db_error=None,
+                    ), 410
                 return render_template(
                     "animal_detail.html",
                     animal=None,
                     unlinked_tag=unlinked_tag,
+                    is_invalidated=False,
                     db_error=None,
                 ), 200
             return render_template(
                 "animal_detail.html",
                 animal=None,
                 unlinked_tag=None,
+                is_invalidated=False,
                 db_error=None,
             ), 404
 
@@ -899,6 +948,22 @@ def create_app() -> Flask:
             as_attachment=True,
             download_name=download_filename,
         )
+
+    @app.route("/animals/<string:animal_id>/excluir", methods=["POST"])
+    @property_required
+    def animal_delete(animal_id: str):
+        """Exclusão unitária de animal com invalidação permanente do QR Code."""
+        try:
+            ctx = get_sanitary_context_safe()
+            res = delete_single_animal(animal_id, ctx.get("organization_id"))
+            flash(
+                f"Animal #{res.get('ear_tag', '')} excluído permanentemente da plataforma! "
+                "Seu QR Code foi invalidado e não exibirá mais dados quando consultado.",
+                "warning",
+            )
+        except SupabaseServiceError as exc:
+            flash(str(exc), "danger")
+        return redirect(url_for("animals_list"))
 
     return app
 

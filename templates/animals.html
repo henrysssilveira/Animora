@@ -21,13 +21,13 @@
 
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ url_for('sanitary.management_routines_view') }}" class="btn btn-mustard">
-            <i class="bi bi-tools me-1"></i> Rotinas de Manejo
+             Rotinas de Manejo
         </a>
         <a href="{{ url_for('sanitary.dashboard') }}" class="btn btn-olive">
-            <i class="bi bi-heart-pulse me-1"></i> Sanidade
+             Sanidade
         </a>
         <a href="{{ url_for('animal_new', species=selected_species if selected_species != 'todas' else 'bovino') }}" class="btn btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> {% if is_admin_authenticated %}Cadastrar Animal{% else %}Atribuir Animal{% endif %}
+             {% if is_admin_authenticated %}Cadastrar Animal{% else %}Atribuir Animal{% endif %}
         </a>
     </div>
 </div>
@@ -40,15 +40,15 @@
     </a>
     <a href="{{ url_for('animals_list', species='bovino', age_category=selected_age, property_id=selected_property) }}"
        class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'bovino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
-        🐄 Bovinos ({{ overall_species_counts.bovino }})
+         Bovinos ({{ overall_species_counts.bovino }})
     </a>
     <a href="{{ url_for('animals_list', species='equino', age_category=selected_age, property_id=selected_property) }}"
        class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'equino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
-        🐎 Equinos ({{ overall_species_counts.equino }})
+         Equinos ({{ overall_species_counts.equino }})
     </a>
     <a href="{{ url_for('animals_list', species='ovino', age_category=selected_age, property_id=selected_property) }}"
        class="btn btn-sm rounded-pill fw-semibold {% if selected_species == 'ovino' %}btn-agro{% else %}btn-outline-agro bg-white{% endif %}">
-        🐑 Ovinos ({{ overall_species_counts.ovino }})
+         Ovinos ({{ overall_species_counts.ovino }})
     </a>
 </div>
 
@@ -84,7 +84,7 @@
         <div class="col-md-6 col-lg-5">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0">
-                    <i class="bi bi-search text-muted"></i>
+                    
                 </span>
                 <input
                     type="search"
@@ -142,7 +142,7 @@
                             <td>
                                 <div class="fw-bold">{{ animal.name or "—" }}</div>
                                 <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
-                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_emoji }} {{ animal.species_label }}</span>
+                                    <span class="{{ animal.species_badge_class }}">{{ animal.species_label }}</span>
                                     {% if animal.sex == 'Macho' %}
                                         <span class="badge-sex-male">Macho</span>
                                     {% else %}
@@ -165,7 +165,7 @@
                             <td>
                                 <div class="small fw-semibold">{{ animal.property_name }}</div>
                                 {% if animal.housing_display %}
-                                    <div class="small text-brand fw-semibold"><i class="bi bi-house-door me-1"></i>{{ animal.housing_display }}</div>
+                                    <div class="small text-brand fw-semibold">{{ animal.housing_display }}</div>
                                 {% else %}
                                     <div class="small text-muted">{{ animal.lot_name }}</div>
                                 {% endif %}
@@ -177,20 +177,20 @@
                                         class="btn btn-sm btn-outline-secondary rounded-3"
                                         title="Imprimir Placa de Baia / Cocho ou Ficha Cadastral"
                                     >
-                                        <i class="bi bi-card-heading"></i>
+                                        
                                     </a>
                                     <a
                                         href="{{ url_for('download_qrcode', token=animal.qr_code_token) }}"
                                         class="btn btn-sm btn-outline-agro"
                                         title="Baixar QR Code em PNG"
                                     >
-                                        <i class="bi bi-download"></i>
+                                        
                                     </a>
                                     <a
                                         href="{{ url_for('animal_detail', token=animal.qr_code_token) }}"
                                         class="btn btn-sm btn-agro"
                                     >
-                                        <i class="bi bi-journal-medical me-1"></i> Ficha &amp; Manejo
+                                         Ficha &amp; Manejo
                                     </a>
                                 </div>
                             </td>
@@ -205,15 +205,13 @@
         </div>
     {% else %}
         <div class="text-center py-5 px-3">
-            <div class="stat-icon stat-icon-pink mx-auto mb-3">
-                <i class="bi bi-collection"></i>
-            </div>
+            
             <h5 class="fw-bold">Nenhum animal encontrado neste filtro</h5>
             <p class="text-muted small mb-4">
                 Altere a espécie/faixa etária selecionada ou cadastre um novo Bovino, Equino ou Ovino no plantel.
             </p>
             <a href="{{ url_for('animal_new', species=selected_species if selected_species != 'todas' else 'bovino') }}" class="btn btn-agro">
-                <i class="bi bi-plus-lg me-1"></i> Cadastrar Animal
+                 Cadastrar Animal
             </a>
         </div>
     {% endif %}

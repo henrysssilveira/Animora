@@ -548,3 +548,32 @@ CREATE POLICY "rls_feeding_plans_access" ON public.feeding_plans
     FOR ALL TO authenticated
     USING (public.user_has_property_access(organization_id, property_id))
     WITH CHECK (public.user_has_property_access(organization_id, property_id));
+
+-- 16. Perfis de Acesso Vinculados a Fazendas (Admin Only)
+CREATE TABLE IF NOT EXISTS public.property_access_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    property_id UUID NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    role VARCHAR(40) NOT NULL DEFAULT 'produtor'
+        CHECK (role IN ('produtor', 'responsavel_tecnico', 'operador')),
+    access_pin VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_property_access_prop ON public.property_access_profiles (property_id);
+CREATE INDEX IF NOT EXISTS idx_property_access_pin ON public.property_access_profiles (access_pin);
+
+-- 17. Tabela de QR Codes Invalidados / Desativados
+CREATE TABLE IF NOT EXISTS public.invalidated_qr_tokens (
+    token UUID PRIMARY KEY,
+    reason VARCHAR(255) DEFAULT 'Registro ou etiqueta excluída',
+    invalidated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invalidated_qr_tokens ON public.invalidated_qr_tokens (token);
+
+ALTER TABLE public.property_access_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invalidated_qr_tokens ENABLE ROW LEVEL SECURITY;

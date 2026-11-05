@@ -92,11 +92,11 @@
 
                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
                     <div class="small text-muted">
-                        <i class="bi bi-shield-lock text-success me-1"></i>
+                        
                         As etiquetas serão salvas em <code>tag_units</code> como <strong>Disponíveis</strong>, sem criar animais automaticamente.
                     </div>
                     <button type="submit" class="btn btn-agro px-4 py-2 flex-shrink-0" {% if tag_migration_error %}disabled{% endif %}>
-                        <i class="bi bi-qr-code-scan me-1"></i> Gerar Etiquetas &amp; QR Codes
+                         Gerar Etiquetas &amp; QR Codes
                     </button>
                 </div>
             </div>
@@ -108,7 +108,7 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <div>
                         <h5 class="fw-bold mb-0">
-                            <i class="bi bi-eye text-success me-1"></i> Pré-visualização de Impressão
+                             Pré-visualização de Impressão
                         </h5>
                         <small class="text-muted">Simulação fiel em escala proporcional antes de gravar e imprimir</small>
                     </div>
@@ -126,7 +126,7 @@
             <div class="card-agro p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-clock-history text-success me-1"></i> Conjuntos Gerados Recentemente
+                         Conjuntos Gerados Recentemente
                     </h6>
                     <a href="{{ url_for('labels.history') }}" class="btn btn-sm btn-outline-agro">Ver histórico completo</a>
                 </div>
@@ -141,13 +141,13 @@
                             </div>
                             <div class="d-flex gap-1">
                                 <a href="{{ url_for('labels.batch_detail', batch_id=b.id) }}" class="btn btn-sm btn-outline-agro" title="Visualizar todas as etiquetas">
-                                    <i class="bi bi-eye"></i> Abrir
+                                     Abrir
                                 </a>
                                 <a href="{{ url_for('labels.export_pdf', batch_id=b.id) }}" class="btn btn-sm btn-agro" title="Baixar PDF em escala real">
-                                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                                     PDF
                                 </a>
                                 <a href="{{ url_for('labels.print_sheet', batch_id=b.id) }}" target="_blank" class="btn btn-sm btn-olive" title="Reimprimir folha">
-                                    <i class="bi bi-printer"></i>
+                                    
                                 </a>
                             </div>
                         </div>

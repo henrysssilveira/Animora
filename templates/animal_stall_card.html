@@ -16,7 +16,7 @@
             </ol>
         </nav>
         <h1 class="h4 fw-bold mb-0">
-            <i class="bi bi-card-heading text-brand me-1"></i>
+            
             Placa de Baia / Cocho &amp; Ficha Cadastral Imprimível
         </h1>
         <p class="text-muted small mb-0">
@@ -30,22 +30,22 @@
                 href="{{ url_for('animal_stall_card', token=animal.qr_code_token, mode='baia') }}"
                 class="btn btn-sm {% if card_mode == 'baia' %}btn-agro{% else %}btn-outline-secondary{% endif %}"
             >
-                <i class="bi bi-door-open me-1"></i> Placa de Baia / Cocho (Pública)
+                 Placa de Baia / Cocho (Pública)
             </a>
             <a
                 href="{{ url_for('animal_stall_card', token=animal.qr_code_token, mode='ficha') }}"
                 class="btn btn-sm {% if card_mode == 'ficha' %}btn-agro{% else %}btn-outline-secondary{% endif %}"
             >
-                <i class="bi bi-file-earmark-medical me-1"></i> Ficha Cadastral Completa (Interna)
+                 Ficha Cadastral Completa (Interna)
             </a>
         </div>
 
         <button type="button" onclick="window.print()" class="btn btn-olive btn-sm px-3 py-2">
-            <i class="bi bi-printer-fill me-1"></i> Imprimir / Salvar PDF
+             Imprimir / Salvar PDF
         </button>
 
         <a href="{{ url_for('animal_detail', token=animal.qr_code_token) }}" class="btn btn-outline-secondary btn-sm rounded-3 py-2">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
+             Voltar
         </a>
     </div>
 </div>
@@ -55,7 +55,7 @@
     <div class="stall-plaque-header d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div class="d-flex align-items-center gap-3">
             <span class="navbar-brand-badge" style="width: 44px; height: 44px; font-size: 1.35rem;">
-                <i class="bi bi-qr-code-scan"></i>
+                
             </span>
             <div>
                 <div class="text-uppercase fw-bold small" style="letter-spacing: 0.12em; color: #EA526F;">
@@ -81,7 +81,7 @@
                     <div class="col-sm-6">
                         <div class="stall-field-box">
                             <div class="stall-field-label">Espécie &amp; Sexo</div>
-                            <div class="stall-field-value">{{ animal.species_emoji }} {{ animal.species_label }} &bull; {{ animal.sex }}</div>
+                            <div class="stall-field-value">{{ animal.species_label }} &bull; {{ animal.sex }}</div>
                         </div>
                     </div>
 
@@ -114,7 +114,7 @@
                             <div class="stall-field-label">Alojamento / Baia / Localização</div>
                             <div class="stall-field-value">
                                 {% if animal.housing_display %}
-                                    <i class="bi bi-house-heart-fill text-brand me-1"></i>{{ animal.housing_display }}
+                                    {{ animal.housing_display }}
                                 {% else %}
                                     <span class="text-muted fw-semibold">Alojamento não especificado</span>
                                 {% endif %}
@@ -160,7 +160,7 @@
             <hr class="my-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold text-uppercase mb-0" style="color: #070600; letter-spacing: 0.05em;">
-                    <i class="bi bi-shield-lock-fill text-brand me-1"></i>
+                    
                     Dados Internos de Manejo &amp; Plano de Cocho (Uso Interno Property / Admin)
                 </h6>
                 <span class="badge bg-warning text-dark">Documento Interno</span>

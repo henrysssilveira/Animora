@@ -2,7 +2,7 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 no-print">
     <div>
         <h1 class="h3 fw-bold mb-1">
-            <i class="bi bi-qr-code text-brand me-1"></i>
+            
             {% if is_admin_authenticated %}
                 Criação &amp; Gestão de Etiquetas QR Code
             {% else %}
@@ -21,18 +21,18 @@
     <div class="sanitary-subnav">
         {% if is_admin_authenticated %}
             <a href="{{ url_for('labels.generator') }}" class="sanitary-subnav-link {% if request.endpoint == 'labels.generator' %}active{% endif %}">
-                <i class="bi bi-sliders"></i> Criar QR Codes
+                 Criar QR Codes
             </a>
         {% endif %}
         <a href="{{ url_for('labels.history') }}" class="sanitary-subnav-link {% if request.endpoint == 'labels.history' %}active{% endif %}">
-            <i class="bi bi-tags"></i> Estoque &amp; Atribuição
+             Estoque &amp; Atribuição
         </a>
     </div>
 </div>
 
 {% if tag_migration_error %}
 <div class="alert alert-warning rounded-4 shadow-sm border-warning-subtle d-flex align-items-start gap-3 mb-4 no-print" role="alert">
-    <i class="bi bi-database-gear fs-3 text-warning-emphasis mt-1"></i>
+    
     <div>
         <h6 class="fw-bold mb-1">Configuração Inicial das Tabelas de Etiquetas no Supabase</h6>
         <p class="small mb-2">{{ tag_migration_error }}</p>

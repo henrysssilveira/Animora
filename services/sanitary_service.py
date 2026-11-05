@@ -41,11 +41,11 @@ from services.supabase_service import (
 
 
 HEALTH_RECORD_TYPE_LABELS: dict[str, dict[str, str]] = {
-    "tratamento": {"label": "Tratamento", "badge": "bg-primary-subtle text-primary-emphasis", "icon": "bi-capsule"},
-    "ocorrencia": {"label": "Ocorrência Sanitária", "badge": "bg-warning-subtle text-warning-emphasis", "icon": "bi-clipboard2-pulse"},
-    "observacao_veterinaria": {"label": "Observação Veterinária", "badge": "bg-info-subtle text-info-emphasis", "icon": "bi-journal-medical"},
-    "avaliacao_inicial": {"label": "Avaliação Sanitária Inicial", "badge": "bg-success-subtle text-success-emphasis", "icon": "bi-shield-check"},
-    "correcao_historico": {"label": "Retificação / Correção", "badge": "bg-secondary-subtle text-secondary-emphasis", "icon": "bi-pencil-square"},
+    "tratamento": {"label": "Tratamento", "badge": "bg-primary-subtle text-primary-emphasis", "icon": ""},
+    "ocorrencia": {"label": "Ocorrência Sanitária", "badge": "bg-warning-subtle text-warning-emphasis", "icon": ""},
+    "observacao_veterinaria": {"label": "Observação Veterinária", "badge": "bg-info-subtle text-info-emphasis", "icon": ""},
+    "avaliacao_inicial": {"label": "Avaliação Sanitária Inicial", "badge": "bg-success-subtle text-success-emphasis", "icon": ""},
+    "correcao_historico": {"label": "Retificação / Correção", "badge": "bg-secondary-subtle text-secondary-emphasis", "icon": ""},
 }
 
 
@@ -119,6 +119,12 @@ def get_sanitary_context() -> dict[str, Any]:
             .data
             or Config.DEFAULT_AGE_BRACKETS
         )
+
+        from services.auth_service import get_assigned_property_id, is_admin_authenticated
+        assigned_prop = get_assigned_property_id()
+        if not is_admin_authenticated() and assigned_prop:
+            properties = [p for p in properties if str(p.get("id")) == str(assigned_prop)]
+            lots = [l for l in lots if str(l.get("property_id")) == str(assigned_prop)]
 
         return {
             "organization": organization,

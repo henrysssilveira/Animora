@@ -10,10 +10,10 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('sanitary.management_routines_view') }}" class="btn btn-sm btn-outline-agro">
-            <i class="bi bi-tools me-1"></i> Painel de Manejo
+             Painel de Manejo
         </a>
         <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+             Nova Campanha
         </a>
     </div>
 </div>
@@ -43,7 +43,7 @@
                     <option value="todas" {% if filters.species == 'todas' %}selected{% endif %}>Todas</option>
                     {% for sp_slug, sp_info in species_meta.items() %}
                         <option value="{{ sp_slug }}" {% if filters.species == sp_slug %}selected{% endif %}>
-                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                            {{ sp_info.plural }}
                         </option>
                     {% endfor %}
                 </select>
@@ -102,12 +102,12 @@
                     <div class="d-flex align-items-center gap-2">
                         <a href="{{ url_for('sanitary.calendar_view', year=cal.prev_year, month=cal.prev_month, **filters) }}"
                            class="btn btn-sm btn-outline-agro">
-                            <i class="bi bi-chevron-left"></i>
+                            
                         </a>
                         <h4 class="h5 fw-bold mb-0 px-2">{{ cal.month_name }} de {{ cal.year }}</h4>
                         <a href="{{ url_for('sanitary.calendar_view', year=cal.next_year, month=cal.next_month, **filters) }}"
                            class="btn btn-sm btn-outline-agro">
-                            <i class="bi bi-chevron-right"></i>
+                            
                         </a>
                     </div>
 

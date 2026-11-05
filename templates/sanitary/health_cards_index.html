@@ -9,7 +9,7 @@
         <p class="text-muted small mb-0">Filtre o plantel por espécie, faixa etária, propriedade ou histórico e abra o prontuário individual.</p>
     </div>
     <a href="{{ url_for('animal_new') }}" class="btn btn-sm btn-agro">
-        <i class="bi bi-plus-lg me-1"></i> Atribuir Animal
+         Atribuir Animal
     </a>
 </div>
 
@@ -33,7 +33,7 @@
                 <option value="todas" {% if filters.species == 'todas' %}selected{% endif %}>Todas</option>
                 {% for sp_slug, sp_info in species_meta.items() %}
                     <option value="{{ sp_slug }}" {% if filters.species == sp_slug %}selected{% endif %}>
-                        {{ sp_info.emoji }} {{ sp_info.plural }}
+                        {{ sp_info.plural }}
                     </option>
                 {% endfor %}
             </select>
@@ -98,7 +98,7 @@
                                 <div class="small text-muted">{{ a.breed }} &bull; {{ a.sex }}</div>
                             </td>
                             <td>
-                                <span class="{{ a.species_badge_class }} me-1">{{ a.species_emoji }} {{ a.species_label }}</span>
+                                <span class="{{ a.species_badge_class }} me-1">{{ a.species_label }}</span>
                                 <span class="{{ a.age_badge_class }}">{{ a.age_category_name }}</span>
                                 <div class="small text-muted mt-1">{{ a.age_label }}</div>
                             </td>
@@ -119,10 +119,10 @@
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
                                     <a href="{{ url_for('animal_stall_card', token=a.qr_code_token) }}" class="btn btn-sm btn-outline-agro" title="Placa de Baia / Ficha QR">
-                                        <i class="bi bi-card-heading"></i>
+                                        
                                     </a>
                                     <a href="{{ url_for('animal_detail', token=a.qr_code_token) }}#carteira-sanitaria" class="btn btn-sm btn-agro">
-                                        <i class="bi bi-journal-medical me-1"></i> Abrir Prontuário
+                                         Abrir Prontuário
                                     </a>
                                 </div>
                             </td>

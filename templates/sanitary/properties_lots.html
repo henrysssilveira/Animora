@@ -1,131 +1,337 @@
 {% extends "base.html" %}
 
-{% block title %}Propriedades, Haras, Cabanhas &amp; Lotes — Animora{% endblock %}
+{% block title %}Fazendas &amp; Acessos — Animora{% endblock %}
 
 {% block content %}
-<div class="mb-3">
-    <h1 class="h3 fw-bold mb-1">Propriedades Rurais, Haras, Cabanhas &amp; Lotes</h1>
-    <p class="text-muted small mb-0">
-        Uma mesma propriedade pode alojar bovinos, equinos e ovinos simultaneamente, com lotes e protocolos separados por espécie.
-    </p>
+<div class="mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Fazendas, Acessos &amp; Lotes</h1>
+            <p class="text-muted small mb-0">
+                {% if is_admin %}
+                    Painel Administrativo: configure novas fazendas, crie acessos vinculados por fazenda e gerencie a limpeza ou exclusão segura de dados.
+                {% else %}
+                    Visualização da sua fazenda vinculada e gestão de lotes operacionais.
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            {% if is_admin %}
+                <span class="badge-level-admin px-3 py-2 fs-6">Administrador da Plataforma</span>
+            {% else %}
+                <span class="badge-level-property px-3 py-2 fs-6">{{ current_operator.property_name or 'Fazenda Vinculada' }}</span>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 {% include "sanitary/_subnav.html" %}
 
-<div class="row g-4">
-    <!-- Propriedades -->
-    <div class="col-lg-6">
-        <div class="card-agro p-4 mb-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success me-1"></i> Nova Propriedade / Haras / Cabanha</h5>
-            <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
-                <input type="hidden" name="entity_type" value="property">
-                <div class="row g-2">
-                    <div class="col-md-7">
-                        <label class="form-label small">Nome da Propriedade <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" placeholder="Ex.: Fazenda & Haras Santa Clara" required>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label small">Vocação Principal</label>
-                        <select class="form-select" name="production_focus">
-                            {% for fslug, flabel in property_focus_labels.items() %}
-                                <option value="{{ fslug }}">{{ flabel }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-7">
-                        <label class="form-label small">Município</label>
-                        <input type="text" class="form-control" name="municipality" placeholder="Ex.: Uberaba">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">UF</label>
-                        <input type="text" class="form-control" name="state" maxlength="2" placeholder="MG">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small">Código</label>
-                        <input type="text" class="form-control" name="code" placeholder="PROP-02">
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-agro w-100 mt-3">Cadastrar Propriedade</button>
-            </form>
+{% if is_admin %}
+    <!-- SEÇÃO EXCLUSIVA ADMIN: GERENCIAMENTO DE FAZENDAS & ACESSOS -->
+    <div class="card-agro p-4 mb-4 border-2">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div>
+                <h4 class="fw-bold mb-1">Configuração de Fazendas</h4>
+                <p class="text-muted small mb-0">
+                    Apenas administradores podem cadastrar fazendas e criar acessos vinculados. Cada acesso criado opera exclusivamente na fazenda designada.
+                </p>
+            </div>
+            <button class="btn btn-agro" type="button" data-bs-toggle="collapse" data-bs-target="#newFarmCollapse" aria-expanded="false">
+                Nova Fazenda
+            </button>
         </div>
 
-        <div class="card-agro p-4">
-            <h6 class="fw-bold mb-3">Propriedades Ativas ({{ ctx.properties | length }})</h6>
-            <div class="d-grid gap-2">
-                {% for p in ctx.properties %}
-                    <div class="p-3 rounded-3 border bg-light-subtle d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="fw-bold">{{ p.name }}</div>
-                            <div class="small text-muted">
-                                {{ p.municipality or '—' }}{% if p.state %}/{{ p.state }}{% endif %} &bull; {{ property_focus_labels.get(p.production_focus, p.production_focus | title) }}
-                            </div>
+        <!-- Formulário Colapsável: Nova Fazenda -->
+        <div class="collapse mb-4" id="newFarmCollapse">
+            <div class="p-4 rounded-3 border bg-light-subtle">
+                <h5 class="fw-bold mb-3">Cadastrar Nova Fazenda</h5>
+                <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
+                    <input type="hidden" name="entity_type" value="property">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Nome da Fazenda / Propriedade <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" placeholder="Ex.: Fazenda Santa Clara / Haras Alvorada" required>
                         </div>
-                        <span class="badge bg-success-subtle text-success-emphasis">{{ p.code or 'Ativa' }}</span>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Vocação Principal</label>
+                            <select class="form-select" name="production_focus">
+                                {% for fslug, flabel in property_focus_labels.items() %}
+                                    <option value="{{ fslug }}">{{ flabel }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Código / Sigla</label>
+                            <input type="text" class="form-control" name="code" placeholder="Ex.: FAZ-02">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Município</label>
+                            <input type="text" class="form-control" name="municipality" placeholder="Ex.: Uberaba">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">UF</label>
+                            <input type="text" class="form-control" name="state" maxlength="2" placeholder="MG">
+                        </div>
                     </div>
-                {% endfor %}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#newFarmCollapse">Cancelar</button>
+                        <button type="submit" class="btn btn-agro">Salvar Nova Fazenda</button>
+                    </div>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- Lotes -->
-    <div class="col-lg-6">
-        <div class="card-agro p-4 mb-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-diagram-3 text-success me-1"></i> Novo Lote / Grupo de Manejo</h5>
-            <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
-                <input type="hidden" name="entity_type" value="lot">
-                <div class="row g-2 mb-3">
-                    <div class="col-md-7">
-                        <label class="form-label small">Propriedade <span class="text-danger">*</span></label>
-                        <select class="form-select" name="property_id" required>
-                            {% for p in ctx.properties %}
-                                <option value="{{ p.id }}">{{ p.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label small">Espécie do Lote</label>
-                        <select class="form-select" name="target_species">
-                            {% for tslug, tlabel in target_species_labels.items() %}
-                                <option value="{{ tslug }}">{{ tlabel }}</option>
-                            {% endfor %}
-                        </select>
+        <!-- Lista de Fazendas Cadastradas com Ações Administrativas -->
+        <h5 class="fw-bold mb-3">Fazendas Registradas ({{ farms | length }})</h5>
+        <div class="row g-3">
+            {% for farm in farms %}
+                <div class="col-lg-6">
+                    <div class="p-3 rounded-3 border bg-white h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-dark">{{ farm.name }}</h5>
+                                    <span class="small text-muted">
+                                        {{ farm.municipality or 'Município não inf.' }}{% if farm.state %}/{{ farm.state }}{% endif %}
+                                        &bull; {{ farm.focus_label }}
+                                    </span>
+                                </div>
+                                <span class="badge bg-dark text-white">{{ farm.code or 'FAZ' }}</span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 my-3">
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    Animais ativos: <strong>{{ farm.animals_count }}</strong>
+                                </span>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    Lotes: <strong>{{ farm.lots_count }}</strong>
+                                </span>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    Acessos vinculados: <strong>{{ farm.access_count }}</strong>
+                                </span>
+                            </div>
+
+                            <!-- Perfis de Acesso Vinculados a esta Fazenda -->
+                            <div class="border rounded-2 p-2 bg-light-subtle mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold">Acessos desta Fazenda:</span>
+                                    <button class="btn btn-link btn-sm p-0 text-decoration-none text-brand fw-semibold" type="button" data-bs-toggle="modal" data-bs-target="#newAccessModal{{ farm.id }}">
+                                        + Criar Acesso
+                                    </button>
+                                </div>
+                                {% if farm.access_profiles %}
+                                    <div class="d-grid gap-1">
+                                        {% for acc in farm.access_profiles %}
+                                            <div class="p-2 rounded bg-white border d-flex justify-content-between align-items-center gap-2 small">
+                                                <div>
+                                                    <span class="fw-semibold">{{ acc.name }}</span>
+                                                    <span class="text-muted">({{ acc.role }})</span>
+                                                    <span class="font-monospace text-muted ms-1">[PIN: {{ acc.access_pin }}]</span>
+                                                    {% if not acc.is_active %}
+                                                        <span class="badge bg-secondary ms-1">Inativo</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    <form method="POST" action="{{ url_for('sanitary.toggle_access_status', profile_id=acc.id) }}" class="d-inline">
+                                                        <button type="submit" class="btn btn-light btn-sm py-0 px-2 border" title="Alternar Status">
+                                                            {% if acc.is_active %}Desativar{% else %}Ativar{% endif %}
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST" action="{{ url_for('sanitary.delete_access', profile_id=acc.id) }}" class="d-inline" onsubmit="return confirm('Excluir permanentemente este perfil de acesso?');">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">Excluir</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="small text-muted mb-0">Nenhum operador exclusivo vinculado a esta fazenda.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Ações Críticas de Limpeza e Exclusão da Fazenda -->
+                        <div class="border-top pt-3 d-flex flex-wrap gap-2 justify-content-end">
+                            <button type="button" class="btn btn-outline-warning btn-sm text-dark" data-bs-toggle="modal" data-bs-target="#wipeModal{{ farm.id }}">
+                                Limpar Dados Operacionais
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteFarmModal{{ farm.id }}">
+                                Excluir Fazenda
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Modal: Novo Acesso para esta Fazenda -->
+                <div class="modal fade" id="newAccessModal{{ farm.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('sanitary.create_property_access', property_id=farm.id) }}">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold">Novo Acesso para {{ farm.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="small text-muted mb-3">
+                                        Este perfil terá acesso de nível <strong>Property</strong> restrito exclusivamente aos animais e lotes de <strong>{{ farm.name }}</strong>.
+                                    </p>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Nome do Operador / Responsável <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="name" placeholder="Ex.: Carlos Mendes (Gerente de Campo)" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Função / Cargo</label>
+                                        <select class="form-select" name="role">
+                                            <option value="produtor">Produtor / Gestor da Fazenda</option>
+                                            <option value="responsavel_tecnico">Responsável Técnico (Médico Veterinário)</option>
+                                            <option value="operador">Equipe de Campo / Manejador</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Chave de Acesso / PIN Exclusivo <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control font-monospace" name="access_pin" placeholder="Ex.: FAZ-CLARA-2026 ou PIN numérico" required minlength="3">
+                                        <div class="form-text small">O operador usará esta chave na tela de acesso para entrar direto na fazenda.</div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-agro">Criar Acesso Vinculado</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal: Confirmação Limpar Dados Operacionais -->
+                <div class="modal fade" id="wipeModal{{ farm.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content border-warning">
+                            <form method="POST" action="{{ url_for('sanitary.wipe_property_data', property_id=farm.id) }}">
+                                <div class="modal-header bg-warning-subtle">
+                                    <h5 class="modal-title fw-bold text-dark">Limpar Dados de {{ farm.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-dark">
+                                        Tem certeza que deseja apagar <strong>todos os dados operacionais</strong> desta fazenda?
+                                    </p>
+                                    <div class="alert alert-warning small">
+                                        <strong>O que será apagado e invalidado:</strong>
+                                        <ul class="mb-0 mt-1">
+                                            <li>Todos os animais ({{ farm.animals_count }}) serão excluídos.</li>
+                                            <li><strong>Todos os QR Codes dos animais serão permanentemente invalidados</strong> (ao escanear, exibirão aviso de código inválido/desativado).</li>
+                                            <li>Todos os lotes ({{ farm.lots_count }}), prontuários sanitários, dietas de cocho e agendamentos serão excluídos.</li>
+                                            <li>A fazenda e os acessos vinculados continuarão ativos para novos animais.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-warning text-dark fw-bold">Confirmar Limpeza Total</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal: Confirmação Excluir Fazenda Inteira -->
+                <div class="modal fade" id="deleteFarmModal{{ farm.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content border-danger">
+                            <form method="POST" action="{{ url_for('sanitary.delete_property_route', property_id=farm.id) }}">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold">Excluir Fazenda Inteira</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-dark">
+                                        Esta ação é <strong>irreversível</strong>. A fazenda <strong>{{ farm.name }}</strong> será completamente apagada da plataforma.
+                                    </p>
+                                    <div class="alert alert-danger small">
+                                        Todos os animais, lotes, prontuários e acessos desta fazenda serão eliminados, e <strong>todos os QR Codes correspondentes se tornarão permanentemente inválidos</strong>.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger fw-bold">Excluir Fazenda Permanentemente</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- SEÇÃO DE LOTES OPERACIONAIS DA FAZENDA -->
+<div class="row g-4">
+    <!-- Formulário: Novo Lote -->
+    <div class="col-lg-5">
+        <div class="card-agro p-4 mb-4">
+            <h5 class="fw-bold mb-3">Novo Lote / Grupo de Manejo</h5>
+            <form method="POST" action="{{ url_for('sanitary.properties_lots_view') }}">
+                <input type="hidden" name="entity_type" value="lot">
                 <div class="mb-3">
-                    <label class="form-label small">Nome do Lote / Pavilhão <span class="text-danger">*</span></label>
+                    <label class="form-label small fw-semibold">Fazenda / Propriedade <span class="text-danger">*</span></label>
+                    <select class="form-select" name="property_id" required>
+                        {% for p in ctx.properties %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Espécie do Lote</label>
+                    <select class="form-select" name="target_species">
+                        {% for tslug, tlabel in target_species_labels.items() %}
+                            <option value="{{ tslug }}">{{ tlabel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nome do Lote / Pavilhão <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" name="name" placeholder="Ex.: Pavilhão Éguas Doadoras / Aprisco Matrizes / Lote Cria" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small">Descrição</label>
+                    <label class="form-label small fw-semibold">Descrição</label>
                     <input type="text" class="form-control" name="description" placeholder="Piquete, cocheira, galpão ou finalidade do grupo">
                 </div>
-                <button type="submit" class="btn btn-olive w-100">Cadastrar Lote</button>
+                <button type="submit" class="btn btn-agro w-100">Cadastrar Lote</button>
             </form>
         </div>
+    </div>
 
+    <!-- Lista de Lotes com Ação Unitária de Exclusão -->
+    <div class="col-lg-7">
         <div class="card-agro p-4">
-            <h6 class="fw-bold mb-3">Lotes Cadastrados ({{ ctx.lots | length }})</h6>
+            <h5 class="fw-bold mb-3">Lotes Operacionais ({{ ctx.lots | length }})</h5>
             {% if ctx.lots %}
                 <div class="d-grid gap-2">
                     {% for l in ctx.lots %}
                         <div class="p-3 rounded-3 border bg-light-subtle d-flex justify-content-between align-items-center gap-2">
                             <div>
-                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                     <span class="fw-bold">{{ l.name }}</span>
                                     {% if l.target_species in species_meta %}
                                         <span class="{{ species_meta[l.target_species].badge_class }}">
-                                            {{ species_meta[l.target_species].emoji }} {{ species_meta[l.target_species].plural }}
+                                            {{ species_meta[l.target_species].plural }}
                                         </span>
                                     {% endif %}
+                                    <span class="badge bg-light text-dark border">{{ l.properties.name if l.properties else '' }}</span>
                                 </div>
                                 <div class="small text-muted">{{ l.description or 'Sem descrição' }}</div>
                             </div>
-                            <span class="badge bg-light text-dark border">{{ l.properties.name if l.properties else '' }}</span>
+                            <div>
+                                <form method="POST" action="{{ url_for('sanitary.delete_lot_route', lot_id=l.id) }}" onsubmit="return confirm('Excluir este lote? Os animais vinculados permanecerão ativos e serão desvinculados do lote.');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Excluir Lote</button>
+                                </form>
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="small text-muted mb-0">Nenhum lote cadastrado ainda.</p>
+                <p class="small text-muted mb-0">Nenhum lote cadastrado ainda para esta fazenda.</p>
             {% endif %}
         </div>
     </div>

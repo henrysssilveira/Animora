@@ -22,7 +22,7 @@
                     <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
                     {% for sp_slug, sp_info in species_meta.items() %}
                         <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
-                            {{ sp_info.emoji }} {{ sp_info.plural }}
+                            {{ sp_info.plural }}
                         </option>
                     {% endfor %}
                 </select>
@@ -32,13 +32,13 @@
                 <input type="hidden" name="property_id" value="{{ selected_property_id }}">
                 <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                 <button type="submit" class="btn btn-sm btn-outline-agro">
-                    <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Pendências
+                     Sincronizar Pendências
                 </button>
             </form>
         {% endif %}
 
         <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+             Nova Campanha
         </a>
     </div>
 </div>
@@ -50,9 +50,9 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
         <h6 class="text-uppercase small fw-bold text-muted mb-0">Composição Etária do Plantel Ativo</h6>
         <div class="d-flex flex-wrap gap-2 small">
-            <span class="badge-species-bovino">🐄 Bovinos: {{ kpis.bovinos_count }}</span>
-            <span class="badge-species-equino">🐎 Equinos: {{ kpis.equinos_count }}</span>
-            <span class="badge-species-ovino">🐑 Ovinos: {{ kpis.ovinos_count }}</span>
+            <span class="badge-species-bovino">Bovinos: {{ kpis.bovinos_count }}</span>
+            <span class="badge-species-equino">Equinos: {{ kpis.equinos_count }}</span>
+            <span class="badge-species-ovino">Ovinos: {{ kpis.ovinos_count }}</span>
         </div>
     </div>
     <div class="row g-3 mb-4">
@@ -62,7 +62,7 @@
                     <div class="small text-muted fw-semibold">Total de Animais</div>
                     <div class="kpi-mini-value mt-1">{{ kpis.total_animals }}</div>
                 </div>
-                <span class="stat-icon stat-icon-green"><i class="bi bi-tags-fill"></i></span>
+                
             </div>
         </div>
         <div class="col-6 col-xl">
@@ -148,7 +148,7 @@
             <div class="card-agro p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0">
-                        <i class="bi bi-calendar2-week text-success me-1"></i> Próximas Atividades Preventivas
+                         Próximas Atividades Preventivas
                     </h5>
                     <a href="{{ url_for('sanitary.calendar_view', species=selected_species) }}" class="btn btn-sm btn-outline-agro">
                         Abrir Calendário
@@ -175,7 +175,7 @@
                                                 <span class="badge-ear-tag">#{{ item.animal.ear_tag }}</span>
                                             </a>
                                             <div class="small text-muted mt-1">
-                                                {{ item.animal.species_emoji }} {{ item.animal.name or item.animal.age_category_name }}
+                                                {{ item.animal.name or item.animal.age_category_name }}
                                             </div>
                                         </td>
                                         <td>
@@ -204,7 +204,7 @@
                                                 data-route="{{ item.vaccines.administration_route if item.vaccines else '' }}"
                                                 data-unit="{{ item.vaccines.dosage_unit if item.vaccines else 'mL' }}"
                                             >
-                                                <i class="bi bi-check2-circle me-1"></i> Confirmar
+                                                 Confirmar
                                             </button>
                                         </td>
                                     </tr>
@@ -214,7 +214,7 @@
                     </div>
                 {% else %}
                     <div class="text-center py-5 px-3">
-                        <div class="stat-icon stat-icon-olive mx-auto mb-3"><i class="bi bi-check2-all"></i></div>
+                        
                         <h6 class="fw-bold">Nenhuma pendência preventiva imediata</h6>
                         <p class="text-muted small mb-3">
                             Cadastre vacinas, vermífugos ou exames no catálogo e configure protocolos por espécie para gerar agendamentos automáticos.
@@ -230,7 +230,7 @@
             <div class="card-agro p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0">
-                        <i class="bi bi-tools text-fern me-1"></i> Retornos de Manejo
+                         Retornos de Manejo
                     </h5>
                     <a href="{{ url_for('sanitary.management_routines_view', species=selected_species) }}" class="small fw-semibold text-success text-decoration-none">Painel</a>
                 </div>
@@ -243,7 +243,7 @@
                                     <span class="{{ ma.routine_badge_class }}">{{ ma.routine_short_label }}</span>
                                     <span class="{{ ma.due_badge_class }}">{{ ma.due_status_label }}</span>
                                 </div>
-                                <div class="small fw-bold">{{ ma.animal.species_emoji }} #{{ ma.animal.ear_tag }} {{ ma.animal.name or '' }}</div>
+                                <div class="small fw-bold">#{{ ma.animal.ear_tag }} {{ ma.animal.name or '' }}</div>
                             </a>
                         {% endfor %}
                     </div>
@@ -257,7 +257,7 @@
             <div class="card-agro p-4 flex-grow-1">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0">
-                        <i class="bi bi-ui-checks-grid text-success me-1"></i> Cartelas Ativas
+                         Cartelas Ativas
                     </h5>
                     <a href="{{ url_for('sanitary.campaigns_list') }}" class="small fw-semibold text-success text-decoration-none">Ver todas</a>
                 </div>

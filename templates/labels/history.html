@@ -11,12 +11,12 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
             <h5 class="fw-bold mb-0">
-                <i class="bi bi-collection text-brand me-1"></i> Histórico de Conjuntos Gerados (Admin)
+                 Histórico de Conjuntos Gerados (Admin)
             </h5>
             <small class="text-muted">Reimprima ou exporte novamente em PDF qualquer conjunto já gerado mantendo os mesmos QR Codes</small>
         </div>
         <a href="{{ url_for('labels.generator') }}" class="btn btn-sm btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> Criar Novo Lote QR
+             Criar Novo Lote QR
         </a>
     </div>
 
@@ -70,13 +70,13 @@
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
                                     <a href="{{ url_for('labels.batch_detail', batch_id=b.id) }}" class="btn btn-sm btn-outline-agro" title="Abrir pré-visualização e editar layout">
-                                        <i class="bi bi-eye"></i> Ver / Editar
+                                         Ver / Editar
                                     </a>
                                     <a href="{{ url_for('labels.export_pdf', batch_id=b.id) }}" class="btn btn-sm btn-agro" title="Baixar PDF em milímetros">
-                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                         PDF
                                     </a>
                                     <a href="{{ url_for('labels.print_sheet', batch_id=b.id) }}" target="_blank" class="btn btn-sm btn-olive" title="Imprimir folha diretamente">
-                                        <i class="bi bi-printer"></i> Imprimir
+                                         Imprimir
                                     </a>
                                 </div>
                             </td>
@@ -98,7 +98,7 @@
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
         <div>
             <h5 class="fw-bold mb-0">
-                <i class="bi bi-upc-scan text-brand me-1"></i> Etiquetas QR &amp; Atribuição de Animais
+                 Etiquetas QR &amp; Atribuição de Animais
             </h5>
             <small class="text-muted">Selecione etiquetas disponíveis para atribuir animais ou reservar para manejo de campo</small>
         </div>
@@ -121,7 +121,7 @@
                 {% endfor %}
             </select>
             <button type="submit" class="btn btn-sm btn-agro">
-                <i class="bi bi-funnel me-1"></i> Filtrar
+                 Filtrar
             </button>
             {% if status_filter or search_q %}
                 <a href="{{ url_for('labels.history') }}" class="btn btn-sm btn-outline-secondary rounded-3">Limpar</a>
@@ -170,11 +170,11 @@
                             <td class="small">
                                 {% if u.animals %}
                                     <a href="{{ url_for('animal_detail', token=u.animals.qr_code_token) }}" class="fw-semibold text-fern text-decoration-none">
-                                        <i class="bi bi-box-arrow-up-right me-1"></i>#{{ u.animals.ear_tag }}{% if u.animals.name %} — {{ u.animals.name }}{% endif %}
+                                        #{{ u.animals.ear_tag }}{% if u.animals.name %} — {{ u.animals.name }}{% endif %}
                                     </a>
                                 {% elif u.status in ('available', 'assigned') %}
                                     <a href="{{ url_for('animal_new', tag_unit_id=u.id) }}" class="btn btn-sm btn-agro py-1 px-2">
-                                        <i class="bi bi-plus-circle me-1"></i> Atribuir Animal
+                                         Atribuir Animal
                                     </a>
                                 {% else %}
                                     <span class="text-muted">Etiqueta baixada</span>
@@ -184,7 +184,7 @@
                                 <div class="d-inline-flex align-items-center gap-1">
                                     {% if is_admin_authenticated %}
                                         <a href="{{ url_for('labels.download_unit_qr', unit_id=u.id) }}" class="btn btn-sm btn-outline-secondary rounded-3" title="Baixar imagem PNG do QR Code">
-                                            <i class="bi bi-qr-code"></i>
+                                            
                                         </a>
                                     {% endif %}
                                     {% if u.status != 'activated' and (is_admin_authenticated or u.status != 'retired') %}

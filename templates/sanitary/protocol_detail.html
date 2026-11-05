@@ -16,7 +16,7 @@
             {% set tsp = protocol.target_species or 'bovino' %}
             {% if tsp in species_meta %}
                 <span class="{{ species_meta[tsp].badge_class }}">
-                    {{ species_meta[tsp].emoji }} {{ species_meta[tsp].plural }}
+                    {{ species_meta[tsp].plural }}
                 </span>
             {% else %}
                 <span class="badge bg-dark-subtle text-dark-emphasis">Todas as espécies</span>
@@ -28,7 +28,7 @@
         <form method="POST" action="{{ url_for('sanitary.protocol_detail', protocol_id=protocol.id) }}">
             <input type="hidden" name="form_action" value="sync_protocol">
             <button type="submit" class="btn btn-sm btn-outline-agro" {% if not protocol.is_active or not protocol.is_validated %}disabled{% endif %}>
-                <i class="bi bi-arrow-repeat me-1"></i> Gerar Pendências p/ Plantel Compatível
+                 Gerar Pendências p/ Plantel Compatível
             </button>
         </form>
         <a href="{{ url_for('sanitary.protocols_view') }}" class="btn btn-sm btn-olive">Voltar</a>
@@ -43,7 +43,7 @@
         <!-- Adicionar Regra -->
         <div class="card-agro p-4 mb-4">
             <h5 class="fw-bold mb-3">
-                <i class="bi bi-plus-circle text-success me-1"></i> Nova Regra Preventiva
+                 Nova Regra Preventiva
             </h5>
 
             {% if not vaccines %}
@@ -126,9 +126,9 @@
                     <div class="col-5">
                         <label class="form-label small">Espécie-Alvo</label>
                         <select class="form-select form-select-sm" name="target_species">
-                            <option value="bovino" {% if protocol.target_species == 'bovino' %}selected{% endif %}>🐄 Bovinos</option>
-                            <option value="equino" {% if protocol.target_species == 'equino' %}selected{% endif %}>🐎 Equinos</option>
-                            <option value="ovino" {% if protocol.target_species == 'ovino' %}selected{% endif %}>🐑 Ovinos</option>
+                            <option value="bovino" {% if protocol.target_species == 'bovino' %}selected{% endif %}> Bovinos</option>
+                            <option value="equino" {% if protocol.target_species == 'equino' %}selected{% endif %}> Equinos</option>
+                            <option value="ovino" {% if protocol.target_species == 'ovino' %}selected{% endif %}> Ovinos</option>
                             <option value="todas" {% if protocol.target_species == 'todas' %}selected{% endif %}>Todas</option>
                         </select>
                     </div>
@@ -238,7 +238,7 @@
                     </table>
                 </div>
                 <p class="small text-muted mt-3 mb-0">
-                    <i class="bi bi-shield-check me-1"></i>
+                    
                     Alterar ou inativar regras preserva integralmente todas as aplicações e históricos já realizados.
                 </p>
             {% else %}

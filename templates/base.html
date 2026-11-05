@@ -34,40 +34,40 @@
                     {% if is_property_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                                <i class="bi bi-grid-1x2 me-1"></i> Dashboard
+                                 Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'animals_list' %}active{% endif %}" href="{{ url_for('animals_list') }}">
-                                <i class="bi bi-list-ul me-1"></i> Plantel
+                                 Plantel
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.blueprint == 'sanitary' %}active{% endif %}" href="{{ url_for('sanitary.dashboard') }}">
-                                <i class="bi bi-heart-pulse me-1"></i> Sanidade &amp; Manejo
+                                 Sanidade &amp; Manejo
                             </a>
                         </li>
                         {% if is_admin_authenticated %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.blueprint == 'labels' %}active{% endif %}" href="{{ url_for('labels.generator') }}">
-                                    <i class="bi bi-qr-code me-1"></i> Criar QR Codes
+                                     Criar QR Codes
                                 </a>
                             </li>
                         {% else %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.blueprint == 'labels' %}active{% endif %}" href="{{ url_for('labels.history') }}">
-                                    <i class="bi bi-tags me-1"></i> Etiquetas
+                                     Etiquetas
                                 </a>
                             </li>
                         {% endif %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'public_lookup' %}active{% endif %}" href="{{ url_for('public_lookup') }}">
-                                <i class="bi bi-search me-1"></i> Consulta QR
+                                 Consulta QR
                             </a>
                         </li>
                         <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
                             <a class="btn btn-agro btn-sm fw-semibold px-3 py-2 rounded-3 w-100" href="{{ url_for('animal_new') }}">
-                                <i class="bi bi-plus-circle-fill me-1"></i>
+                                
                                 {% if is_admin_authenticated %}Cadastrar Animal{% else %}Atribuir Animal{% endif %}
                             </a>
                         </li>
@@ -91,14 +91,14 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item small fw-semibold" href="{{ url_for('operator_login', level='admin', next=url_for('labels.generator')) }}">
-                                            <i class="bi bi-key-fill text-warning me-1"></i> Entrar como Admin (Criar QR Codes)
+                                             Entrar como Admin (Criar QR Codes)
                                         </a>
                                     </li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item small text-danger" href="{{ url_for('operator_logout') }}">
-                                        <i class="bi bi-box-arrow-right me-1"></i> Sair (Voltar para Common)
+                                         Sair (Voltar para Common)
                                     </a>
                                 </li>
                             </ul>
@@ -106,7 +106,7 @@
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint in ('dashboard', 'public_lookup') %}active{% endif %}" href="{{ url_for('public_lookup') }}">
-                                <i class="bi bi-qr-code-scan me-1"></i> Consulta Pública QR
+                                 Consulta Pública QR
                             </a>
                         </li>
                         <li class="nav-item d-none d-lg-flex align-items-center ms-2">
@@ -114,7 +114,7 @@
                         </li>
                         <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
                             <a class="btn btn-agro btn-sm fw-semibold px-3 py-2 rounded-3 w-100" href="{{ url_for('operator_login') }}">
-                                <i class="bi bi-shield-lock-fill me-1"></i> Acesso Property / Admin
+                                 Acesso Property / Admin
                             </a>
                         </li>
                     {% endif %}
@@ -133,11 +133,11 @@
                         {% for category, message in messages %}
                             <div class="alert alert-{{ category }} alert-dismissible fade show rounded-4 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
                                 {% if category == 'success' %}
-                                    <i class="bi bi-check-circle-fill fs-5"></i>
+                                    
                                 {% elif category == 'warning' %}
-                                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                    
                                 {% else %}
-                                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                                    
                                 {% endif %}
                                 <div>{{ message }}</div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
@@ -150,7 +150,7 @@
             <!-- Alerta de conexão/configuração do Supabase -->
             {% if db_error %}
                 <div class="alert alert-warning rounded-4 shadow-sm border-warning-subtle d-flex align-items-start gap-3 mb-4 no-print" role="alert">
-                    <i class="bi bi-database-exclamation fs-4 text-warning-emphasis mt-1"></i>
+                    
                     <div>
                         <h6 class="fw-bold mb-1">Atenção na conexão com o Supabase</h6>
                         <p class="mb-0 small">{{ db_error }}</p>

@@ -2,42 +2,42 @@
 <div class="sanitary-subnav mb-4 no-print" role="navigation" aria-label="Navegação Sanitária e Manejo">
     <a href="{{ url_for('sanitary.dashboard') }}"
        class="sanitary-subnav-link {% if request.endpoint == 'sanitary.dashboard' %}active{% endif %}">
-        <i class="bi bi-speedometer2"></i> Visão Geral
+         Visão Geral
     </a>
     <a href="{{ url_for('sanitary.calendar_view') }}"
        class="sanitary-subnav-link {% if request.endpoint == 'sanitary.calendar_view' %}active{% endif %}">
-        <i class="bi bi-calendar3"></i> Calendário
+         Calendário
     </a>
     <a href="{{ url_for('sanitary.management_routines_view') }}"
        class="sanitary-subnav-link {% if request.endpoint == 'sanitary.management_routines_view' %}active{% endif %}">
-        <i class="bi bi-tools"></i> Manejo &amp; Cascos/Tosquia
+         Manejo &amp; Cascos/Tosquia
     </a>
     <a href="{{ url_for('sanitary.campaigns_list') }}"
        class="sanitary-subnav-link {% if request.endpoint in ('sanitary.campaigns_list', 'sanitary.campaign_new', 'sanitary.campaign_detail') %}active{% endif %}">
-        <i class="bi bi-ui-checks-grid"></i> Cartelas
+         Cartelas
     </a>
     <a href="{{ url_for('sanitary.vaccines_view') }}"
        class="sanitary-subnav-link {% if request.endpoint == 'sanitary.vaccines_view' %}active{% endif %}">
-        <i class="bi bi-eyedropper"></i> Catálogo Preventivo
+         Catálogo Preventivo
     </a>
     <a href="{{ url_for('sanitary.protocols_view') }}"
        class="sanitary-subnav-link {% if request.endpoint in ('sanitary.protocols_view', 'sanitary.protocol_detail') %}active{% endif %}">
-        <i class="bi bi-clipboard2-check"></i> Protocolos
+         Protocolos
     </a>
     <a href="{{ url_for('sanitary.health_cards_index') }}"
        class="sanitary-subnav-link {% if request.endpoint == 'sanitary.health_cards_index' %}active{% endif %}">
-        <i class="bi bi-journal-medical"></i> Carteira Sanitária
+         Carteira Sanitária
     </a>
     <a href="{{ url_for('sanitary.properties_lots_view') }}"
        class="sanitary-subnav-link ms-md-auto {% if request.endpoint == 'sanitary.properties_lots_view' %}active{% endif %}">
-        <i class="bi bi-geo-alt"></i> Propriedades &amp; Lotes
+         Propriedades &amp; Lotes
     </a>
 </div>
 
 {% if migration_error %}
     <div class="alert alert-warning rounded-4 border-warning-subtle shadow-sm p-4 mb-4">
         <div class="d-flex align-items-start gap-3">
-            <i class="bi bi-database-gear fs-3 text-warning-emphasis"></i>
+            
             <div>
                 <h5 class="fw-bold mb-1">Configuração Inicial do Banco Pendente</h5>
                 <p class="mb-2 small">{{ migration_error }}</p>

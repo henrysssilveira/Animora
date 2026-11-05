@@ -21,7 +21,7 @@
             </form>
         {% endif %}
         <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-sm btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> Nova Campanha
+             Nova Campanha
         </a>
     </div>
 </div>
@@ -49,10 +49,10 @@
 
                         <h5 class="fw-bold mb-1">{{ camp.name }}</h5>
                         <div class="small text-muted mb-3">
-                            <div><i class="bi bi-eyedropper me-1"></i> {{ camp.vaccines.commercial_name if camp.vaccines else 'Vacina' }}</div>
-                            <div><i class="bi bi-calendar-event me-1"></i> Previsão: {{ camp.scheduled_date | date_br }}</div>
+                            <div> {{ camp.vaccines.commercial_name if camp.vaccines else 'Vacina' }}</div>
+                            <div> Previsão: {{ camp.scheduled_date | date_br }}</div>
                             <div>
-                                <i class="bi bi-diagram-3 me-1"></i>
+                                
                                 {% if camp.lots %}Lote: {{ camp.lots.name }}{% else %}Seleção manual de animais{% endif %}
                             </div>
                         </div>
@@ -96,7 +96,7 @@
                     </div>
 
                     <a href="{{ url_for('sanitary.campaign_detail', campaign_id=camp.id) }}" class="btn btn-agro w-100">
-                        <i class="bi bi-folder2-open me-1"></i> Abrir Cartela Individual
+                         Abrir Cartela Individual
                     </a>
                 </div>
             </div>
@@ -104,14 +104,14 @@
     </div>
 {% elif not migration_error %}
     <div class="card-agro p-5 text-center">
-        <div class="stat-icon stat-icon-green mx-auto mb-3"><i class="bi bi-ui-checks-grid"></i></div>
+        
         <h5 class="fw-bold">Nenhuma cartela de vacinação cadastrada</h5>
         <p class="text-muted small mb-4">
             Crie uma campanha selecionando um lote inteiro ou pesquisando animais individualmente.
             Cada animal receberá seu próprio agendamento independente.
         </p>
         <a href="{{ url_for('sanitary.campaign_new') }}" class="btn btn-agro">
-            <i class="bi bi-plus-lg me-1"></i> Criar Primeira Campanha
+             Criar Primeira Campanha
         </a>
     </div>
 {% endif %}

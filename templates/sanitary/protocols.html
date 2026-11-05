@@ -23,7 +23,7 @@
                 <option value="todas" {% if selected_species == 'todas' %}selected{% endif %}>Todas as espécies</option>
                 {% for sp_slug, sp_info in species_meta.items() %}
                     <option value="{{ sp_slug }}" {% if selected_species == sp_slug %}selected{% endif %}>
-                        {{ sp_info.emoji }} {{ sp_info.plural }}
+                        {{ sp_info.plural }}
                     </option>
                 {% endfor %}
             </select>
@@ -39,7 +39,7 @@
     <div class="col-lg-4">
         <div class="card-agro p-4">
             <h5 class="fw-bold mb-3">
-                <i class="bi bi-clipboard2-plus text-success me-1"></i> Novo Protocolo Preventivo
+                 Novo Protocolo Preventivo
             </h5>
 
             <form method="POST" action="{{ url_for('sanitary.protocols_view') }}">
@@ -60,9 +60,9 @@
                     <div class="col-5">
                         <label class="form-label">Espécie-Alvo <span class="text-danger">*</span></label>
                         <select class="form-select" name="target_species" required>
-                            <option value="bovino" {% if selected_species == 'bovino' %}selected{% endif %}>🐄 Bovinos</option>
-                            <option value="equino" {% if selected_species == 'equino' %}selected{% endif %}>🐎 Equinos</option>
-                            <option value="ovino" {% if selected_species == 'ovino' %}selected{% endif %}>🐑 Ovinos</option>
+                            <option value="bovino" {% if selected_species == 'bovino' %}selected{% endif %}> Bovinos</option>
+                            <option value="equino" {% if selected_species == 'equino' %}selected{% endif %}> Equinos</option>
+                            <option value="ovino" {% if selected_species == 'ovino' %}selected{% endif %}> Ovinos</option>
                             <option value="todas">Todas</option>
                         </select>
                     </div>
@@ -130,7 +130,7 @@
                                     {% set tsp = p.target_species or 'bovino' %}
                                     {% if tsp in species_meta %}
                                         <span class="{{ species_meta[tsp].badge_class }}">
-                                            {{ species_meta[tsp].emoji }} {{ species_meta[tsp].plural }}
+                                            {{ species_meta[tsp].plural }}
                                         </span>
                                     {% else %}
                                         <span class="badge bg-dark-subtle text-dark-emphasis">Todas as espécies</span>
@@ -154,7 +154,7 @@
                             </div>
 
                             <a href="{{ url_for('sanitary.protocol_detail', protocol_id=p.id) }}" class="btn btn-sm btn-agro flex-shrink-0">
-                                <i class="bi bi-sliders me-1"></i> Regras ({{ p.rules_count }})
+                                 Regras ({{ p.rules_count }})
                             </a>
                         </div>
                     {% endfor %}
